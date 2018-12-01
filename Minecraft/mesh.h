@@ -33,6 +33,7 @@ public:
     vector<unsigned int> indices;
 	unsigned int textureID;
     unsigned int VAO;
+	bool isSky;
 
 	Mesh() {}
 
@@ -41,21 +42,41 @@ public:
         this->vertices = vertices;
         this->indices = indices;
         this->textureID = textureID;
-
+		this->isSky = false;
         setupMesh();
     }
 
+	Mesh(unsigned int textureID)
+	{
+		this->textureID = textureID;
+		this->isSky = true;
+		setupSky();
+	}
+
     void Draw(Shader shader) 
     {
-		glActiveTexture(GL_TEXTURE0);
-		glUniform1i(glGetUniformLocation(shader.ID, "texture_diffuse"), 0);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-        
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+		if (isSky)
+		{
+			glDepthFunc(GL_LEQUAL);
+			glBindVertexArray(VAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
+			glDepthFunc(GL_LESS);
+		}
+		else
+		{
+			glActiveTexture(GL_TEXTURE0);
+			glUniform1i(glGetUniformLocation(shader.ID, "texture_diffuse"), 0);
+			glBindTexture(GL_TEXTURE_2D, textureID);
 
-        glActiveTexture(GL_TEXTURE0);
+			glBindVertexArray(VAO);
+			glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+
+			glActiveTexture(GL_TEXTURE0);
+		}
     }
 
 private:
@@ -82,5 +103,61 @@ private:
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
         glBindVertexArray(0);
     }
+
+	void setupSky()
+	{
+		float skyboxVertices[] = {
+			-1.0f,  1.0f, -1.0f,
+			-1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+
+			-1.0f, -1.0f,  1.0f,
+			-1.0f, -1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f,  1.0f,
+			-1.0f, -1.0f,  1.0f,
+
+			 1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+
+			-1.0f, -1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f, -1.0f,  1.0f,
+			-1.0f, -1.0f,  1.0f,
+
+			-1.0f,  1.0f, -1.0f,
+			 1.0f,  1.0f, -1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f, -1.0f,
+
+			-1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f,  1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f,  1.0f,
+			 1.0f, -1.0f,  1.0f
+		};
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+
+		glBindVertexArray(VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glBindVertexArray(0);
+	}
 };
 #endif

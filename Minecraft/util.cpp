@@ -1,13 +1,62 @@
 #include "util.h"
+unsigned int skyTexture;
 unsigned int grassTexture;
+Mesh skyMesh;
 Mesh grassMesh;
+unsigned char ***map;
 
 void init()
 {
-	grassTexture = loadTexture(FileSystem::getPath("resources/textures/grass.png").c_str());
+	initWorldMap();
+	skyTexture = loadSkyMap();
+	grassTexture = loadTexture(FileSystem::getPath("resources/textures/blocks/grass.png").c_str());
+
+	skyMesh = initSkyMesh();
 	grassMesh = initBlockMesh(GRASS);
 }
 
+void initWorldMap()
+{
+	map = new unsigned char**[WORLD_WIDTH];
+	for (int i = 0; i < WORLD_WIDTH; i++)
+	{
+		map[i] = new unsigned char*[WORLD_WIDTH];
+		for (int j = 0; j < WORLD_WIDTH; j++)
+		{
+			map[i][j] = new unsigned char[WORLD_HEIGHT];
+			map[i][j][0] = 1;
+		}
+	}
+
+}
+
+void drawWorld(Shader shader)
+{
+	shader.use();
+	for (int i = 0; i < WORLD_WIDTH; i++)
+	{
+		for (int j = 0; j < WORLD_WIDTH; j++)
+		{
+			for (int k = 0; k < WORLD_HEIGHT; k++)
+			{
+				shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(i, j, k)));
+				switch (map[i][j][k])
+				{
+				case 1:
+					grassMesh.Draw(shader);
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	}
+}
+
+Mesh initSkyMesh()
+{
+	return Mesh(skyTexture);
+}
 
 Mesh initBlockMesh(int type)
 {
@@ -71,7 +120,6 @@ unsigned int loadTexture(char const * path)
 {
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
-
 	int width, height, nrComponents;
 	unsigned char *data = getImage(path, &width, &height, &nrComponents, 0, 8);
 	if (data)
@@ -96,6 +144,46 @@ unsigned int loadTexture(char const * path)
 		std::cout << "Texture failed to load at path: " << path << std::endl;
 		stbi_image_free(data);
 	}
+
+	return textureID;
+}
+
+unsigned int loadSkyMap()
+{
+	vector<std::string> faces
+	{
+		FileSystem::getPath("resources/textures/skybox/right.jpg"),
+		FileSystem::getPath("resources/textures/skybox/left.jpg"),
+		FileSystem::getPath("resources/textures/skybox/top.jpg"),
+		FileSystem::getPath("resources/textures/skybox/bottom.jpg"),
+		FileSystem::getPath("resources/textures/skybox/front.jpg"),
+		FileSystem::getPath("resources/textures/skybox/back.jpg"),
+	};
+
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrComponents;
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	return textureID;
 }

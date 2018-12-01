@@ -83,6 +83,7 @@ int main()
 	// -------------------------
 	Shader shader("shaders/3.2.2.point_shadows.vs", "shaders/3.2.2.point_shadows.fs");
 	Shader simpleDepthShader("shaders/3.2.2.point_shadows_depth.vs", "shaders/3.2.2.point_shadows_depth.fs", "shaders/3.2.2.point_shadows_depth.gs");
+	Shader skyboxShader("shaders/6.2.skybox.vs", "shaders/6.2.skybox.fs");
 
 	// load textures
 	// -------------
@@ -119,6 +120,10 @@ int main()
 	shader.use();
 	shader.setInt("diffuseTexture", 0);
 	shader.setInt("depthMap", 1);
+
+	skyboxShader.use();
+	skyboxShader.setInt("skybox", 0);
+
 	// lighting info
 	// -------------
 	glm::vec3 lightPos(0.0f, 5.0f, 0.0f);
@@ -168,9 +173,7 @@ int main()
 			simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
 		simpleDepthShader.setFloat("far_plane", far_plane);
 		simpleDepthShader.setVec3("lightPos", lightPos);
-		blocks[0].Draw(simpleDepthShader);
-		blocks[1].Draw(simpleDepthShader);
-		blocks[2].Draw(simpleDepthShader);
+		drawWorld(simpleDepthShader);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		// 2. render scene as normal 
@@ -189,9 +192,14 @@ int main()
 		shader.setFloat("far_plane", far_plane);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-		blocks[0].Draw(shader);
-		blocks[1].Draw(shader);
-		blocks[2].Draw(shader);
+		drawWorld(shader);
+
+
+		skyboxShader.use();
+		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
+		skyboxShader.setMat4("view", view);
+		skyboxShader.setMat4("projection", projection);
+		skyMesh.Draw(skyboxShader);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
