@@ -1,277 +1,534 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include "shader.h"
-#include "camera.h"
-#include "block.h"
-#include "util.h"
-
+#include <stdlib.h>
+#include <math.h>
 #include <iostream>
+#define GLM_FORCE_RADIANS
+#include "global.h"
+#include "world.h"
+#include "texture.h"
+#include "shader_utils.h"
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
-unsigned int loadTexture(const char *path);
-unsigned char *getImage(char const *filename, int *x, int *y, int *comp, int req_comp, int value);
 
-// settings
-unsigned int SCR_WIDTH = 1280;
-unsigned int SCR_HEIGHT = 720;
-bool shadows = true;
-bool shadowsKeyPressed = false;
+static World *world;
 
-// camera
-Camera camera(glm::vec3(0.0f, 2.25f, 0.0f));
-float lastX = (float)SCR_WIDTH / 2.0;
-float lastY = (float)SCR_HEIGHT / 2.0;
-bool firstMouse = true;
+static void update_vectors() {
+	forward.x = sinf(angle.x) * cosf(angle.y);
+	forward.y = sinf(angle.y);
+	forward.z = cosf(angle.x) * cosf(angle.y);
+	forward = glm::normalize(forward);
 
-// timing
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
+	right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
 
-int main()
-{
-	// glfw: initialize and configure
-	// ------------------------------
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	up = glm::cross(right, forward);
+}
 
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
-#endif
+static int init_resources() {
+	/* Create shaders */
 
-	// glfw window creation
-	// --------------------
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Minecraft", NULL, NULL);
-	if (window == NULL)
-	{
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
-		return -1;
-	}
-	glfwMakeContextCurrent(window);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetCursorPosCallback(window, mouse_callback);
-	glfwSetScrollCallback(window, scroll_callback);
+	program = create_program("shaders/minecraft.v.glsl", "shaders/minecraft.f.glsl");
 
-	// tell GLFW to capture our mouse
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	if (program == 0)
+		return 0;
 
-	// glad: load all OpenGL function pointers
-	// ---------------------------------------
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
-		return -1;
-	}
+	attribute_coord = get_attrib(program, "coord");
+	uniform_mvp = get_uniform(program, "mvp");
 
-	// configure global opengl state
-	// -----------------------------
-	glEnable(GL_DEPTH_TEST);
+	if (attribute_coord == -1 || uniform_mvp == -1)
+		return 0;
+
+	/* Create and upload the texture */
+	Texture blocks("resources/textures/blocks.png");
+
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &texture_id);
+	glBindTexture(GL_TEXTURE_2D, texture_id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, blocks.getWidth(), blocks.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, blocks.getData());
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	/* Create the world */
+
+	world = new World();
+
+	position = glm::vec3(0, CY + 1, 0);
+	angle = glm::vec3(0, -0.5, 0);
+	update_vectors();
+
+	/* Create a VBO for the cursor */
+
+	glGenBuffers(1, &cursor_vbo);
+
+	/* OpenGL settings that do not change while running this program */
+
+	glUseProgram(program);
+	glUniform1i(uniform_texture, 0);
+	glClearColor(0.6, 0.8, 1.0, 0.0);
 	glEnable(GL_CULL_FACE);
-	init();
 
-	// build and compile shaders
-	// -------------------------
-	Shader shader("shaders/3.2.2.point_shadows.vs", "shaders/3.2.2.point_shadows.fs");
-	Shader simpleDepthShader("shaders/3.2.2.point_shadows_depth.vs", "shaders/3.2.2.point_shadows_depth.fs", "shaders/3.2.2.point_shadows_depth.gs");
-	Shader skyboxShader("shaders/6.2.skybox.vs", "shaders/6.2.skybox.fs");
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // Use GL_NEAREST_MIPMAP_LINEAR if you want to use mipmaps
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	// load textures
-	// -------------
-	// configure depth map FBO
-	// -----------------------
+	glPolygonOffset(1, 1);
 
-	
-	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-	unsigned int depthMapFBO;
-	glGenFramebuffers(1, &depthMapFBO);
-	// create depth cubemap texture
-	unsigned int depthCubemap;
-	glGenTextures(1, &depthCubemap);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-	for (unsigned int i = 0; i < 6; ++i)
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	// attach depth texture as FBO's depth buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	Block blocks[3];
-	blocks[0] = Block(&grassMesh);
-	blocks[1] = Block(&grassMesh, glm::vec3(1.0f, 0.0f, 0.0f));
-	blocks[2] = Block(&grassMesh, glm::vec3(1.0f, 0.0f, 1.0f));
-	// shader configuration
-	// --------------------
-	shader.use();
-	shader.setInt("diffuseTexture", 0);
-	shader.setInt("depthMap", 1);
+	glEnableVertexAttribArray(attribute_coord);
 
-	skyboxShader.use();
-	skyboxShader.setInt("skybox", 0);
+	return 1;
+}
 
-	// lighting info
-	// -------------
-	glm::vec3 lightPos(0.0f, 5.0f, 0.0f);
+static void reshape(int w, int h) {
+	ww = w;
+	wh = h;
+	glViewport(0, 0, w, h);
+}
 
-	// render loop
-	// -----------
-	while (!glfwWindowShouldClose(window))
-	{
-		// per-frame time logic
-		// --------------------
-		float currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
+// Not really GLSL fract(), but the absolute distance to the nearest integer value
+static float fract(float value) {
+	float f = value - floorf(value);
+	if (f > 0.5)
+		return 1 - f;
+	else
+		return f;
+}
 
-		// input
-		// -----
-		processInput(window);
+static void display() {
+	glm::mat4 view = glm::lookAt(position, position + forward, up);
+	glm::mat4 projection = glm::perspective(45.0f, 1.0f*ww / wh, 0.01f, 1000.0f);
 
-		// move light position over time
-		lightPos.x = sin(glfwGetTime() * 0.5) * 3.0;
+	glm::mat4 mvp = projection * view;
 
-		// render
-		// ------
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
 
-		// 0. create depth cubemap transformation matrices
-		// -----------------------------------------------
-		float near_plane = 0.1f;
-		float far_plane = 25.0f;
-		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT, near_plane, far_plane);
-		std::vector<glm::mat4> shadowTransforms;
-		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
-		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
-		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-		shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_POLYGON_OFFSET_FILL);
 
-		// 1. render scene to depth cubemap
-		// --------------------------------
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		simpleDepthShader.use();
-		for (unsigned int i = 0; i < 6; ++i)
-			simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-		simpleDepthShader.setFloat("far_plane", far_plane);
-		simpleDepthShader.setVec3("lightPos", lightPos);
-		drawWorld(simpleDepthShader);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	/* Then draw chunks */
 
-		// 2. render scene as normal 
-		// -------------------------
-		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		shader.use();
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 view = camera.GetViewMatrix();
-		shader.setMat4("projection", projection);
-		shader.setMat4("view", view);
-		// set lighting uniforms
-		shader.setVec3("lightPos", lightPos);
-		shader.setVec3("viewPos", camera.Position);
-		shader.setInt("shadows", shadows); // enable/disable shadows by pressing 'SPACE'
-		shader.setFloat("far_plane", far_plane);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-		drawWorld(shader);
+	world->render(mvp);
 
+	/* At which voxel are we looking? */
 
-		skyboxShader.use();
-		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-		skyboxShader.setMat4("view", view);
-		skyboxShader.setMat4("projection", projection);
-		skyMesh.Draw(skyboxShader);
+	if (select_using_depthbuffer) {
+		/* Find out coordinates of the center pixel */
 
-		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-		// -------------------------------------------------------------------------------
-		glfwSwapBuffers(window);
-		glfwPollEvents();
+		float depth;
+		glReadPixels(ww / 2, wh / 2, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+
+		glm::vec4 viewport = glm::vec4(0, 0, ww, wh);
+		glm::vec3 wincoord = glm::vec3(ww / 2, wh / 2, depth);
+		glm::vec3 objcoord = glm::unProject(wincoord, view, projection, viewport);
+
+		/* Find out which block it belongs to */
+
+		mx = objcoord.x;
+		my = objcoord.y;
+		mz = objcoord.z;
+		if (objcoord.x < 0)
+			mx--;
+		if (objcoord.y < 0)
+			my--;
+		if (objcoord.z < 0)
+			mz--;
+
+		/* Find out which face of the block we are looking at */
+
+		if (fract(objcoord.x) < fract(objcoord.y))
+			if (fract(objcoord.x) < fract(objcoord.z))
+				face = 0; // X
+			else
+				face = 2; // Z
+		else
+			if (fract(objcoord.y) < fract(objcoord.z))
+				face = 1; // Y
+			else
+				face = 2; // Z
+
+		if (face == 0 && forward.x > 0)
+			face += 3;
+		if (face == 1 && forward.y > 0)
+			face += 3;
+		if (face == 2 && forward.z > 0)
+			face += 3;
+	}
+	else {
+		/* Very naive ray casting algorithm to find out which block we are looking at */
+
+		glm::vec3 testpos = position;
+		glm::vec3 prevpos = position;
+
+		for (int i = 0; i < 100; i++) {
+			/* Advance from our currect position to the direction we are looking at, in small steps */
+
+			prevpos = testpos;
+			testpos += forward * 0.1f;
+
+			mx = floorf(testpos.x);
+			my = floorf(testpos.y);
+			mz = floorf(testpos.z);
+
+			/* If we find a block that is not air, we are done */
+
+			if (world->get(mx, my, mz))
+				break;
+		}
+
+		/* Find out which face of the block we are looking at */
+
+		int px = floorf(prevpos.x);
+		int py = floorf(prevpos.y);
+		int pz = floorf(prevpos.z);
+
+		if (px > mx)
+			face = 0;
+		else if (px < mx)
+			face = 3;
+		else if (py > my)
+			face = 1;
+		else if (py < my)
+			face = 4;
+		else if (pz > mz)
+			face = 2;
+		else if (pz < mz)
+			face = 5;
+
+		/* If we are looking at air, move the cursor out of sight */
+		if (!world->get(mx, my, mz))
+		{ 
+			mx = my = mz = 99999;
+		}
 	}
 
-	glfwTerminate();
+	float bx = mx;
+	float by = my;
+	float bz = mz;
+
+	/* Render a box around the block we are pointing at */
+
+	float box[24][4] = {
+		{bx + 0, by + 0, bz + 0, 14},
+		{bx + 1, by + 0, bz + 0, 14},
+		{bx + 0, by + 1, bz + 0, 14},
+		{bx + 1, by + 1, bz + 0, 14},
+		{bx + 0, by + 0, bz + 1, 14},
+		{bx + 1, by + 0, bz + 1, 14},
+		{bx + 0, by + 1, bz + 1, 14},
+		{bx + 1, by + 1, bz + 1, 14},
+
+		{bx + 0, by + 0, bz + 0, 14},
+		{bx + 0, by + 1, bz + 0, 14},
+		{bx + 1, by + 0, bz + 0, 14},
+		{bx + 1, by + 1, bz + 0, 14},
+		{bx + 0, by + 0, bz + 1, 14},
+		{bx + 0, by + 1, bz + 1, 14},
+		{bx + 1, by + 0, bz + 1, 14},
+		{bx + 1, by + 1, bz + 1, 14},
+
+		{bx + 0, by + 0, bz + 0, 14},
+		{bx + 0, by + 0, bz + 1, 14},
+		{bx + 1, by + 0, bz + 0, 14},
+		{bx + 1, by + 0, bz + 1, 14},
+		{bx + 0, by + 1, bz + 0, 14},
+		{bx + 0, by + 1, bz + 1, 14},
+		{bx + 1, by + 1, bz + 0, 14},
+		{bx + 1, by + 1, bz + 1, 14},
+	};
+
+	glDisable(GL_POLYGON_OFFSET_FILL);
+	glDisable(GL_CULL_FACE);
+	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
+	glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof box, box, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glDrawArrays(GL_LINES, 0, 24);
+
+	/* Draw a cross in the center of the screen */
+
+	float cross[4][4] = {
+		{-0.05, 0, 0, 13},
+		{+0.05, 0, 0, 13},
+		{0, -0.05, 0, 13},
+		{0, +0.05, 0, 13},
+	};
+
+	glDisable(GL_DEPTH_TEST);
+	glm::mat4 one(1);
+	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(one));
+	glBufferData(GL_ARRAY_BUFFER, sizeof cross, cross, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glDrawArrays(GL_LINES, 0, 4);
+
+	/* And we are done */
+
+	glutSwapBuffers();
+}
+
+static void special(int key, int x, int y) {
+	switch (key) {
+	case GLUT_KEY_PAGE_UP:
+		keys |= 16;
+		break;
+	case GLUT_KEY_PAGE_DOWN:
+		keys |= 32;
+		break;
+	case GLUT_KEY_HOME:
+		position = glm::vec3(0, CY + 1, 0);
+		angle = glm::vec3(0, -0.5, 0);
+		update_vectors();
+		break;
+	case GLUT_KEY_END:
+		position = glm::vec3(0, CX * SCX, 0);
+		angle = glm::vec3(0, -M_PI * 0.49, 0);
+		update_vectors();
+		break;
+	case GLUT_KEY_F1:
+		select_using_depthbuffer = !select_using_depthbuffer;
+		if (select_using_depthbuffer)
+			printf("Using depth buffer selection method\n");
+		else
+			printf("Using ray casting selection method\n");
+		break;
+	}
+}
+
+static void specialup(int key, int x, int y) {
+	switch (key) {
+	case GLUT_KEY_PAGE_UP:
+		keys &= ~16;
+		break;
+	case GLUT_KEY_PAGE_DOWN:
+		keys &= ~32;
+		break;
+	}
+}
+
+bool checkColllision(glm::vec3 nextPosition, glm::vec3 direction)
+{
+	float camSize = 0.5f;
+	direction = glm::normalize(direction);
+	glm::vec3 camPosition = glm::floor(nextPosition + direction * camSize);
+	if (world->get(camPosition.x, camPosition.y, camPosition.z))
+	{
+		printf("Collision: %d %d %d\n", camPosition.x, camPosition.y, camPosition.z);
+		return false;
+	}
+	return true;
+}
+
+static void idle() {
+	static int pt = 0;
+	static const float movespeed = 10;
+
+	now = time(0);
+	int t = glutGet(GLUT_ELAPSED_TIME);
+	float dt = (t - pt) * 1.0e-3;
+	pt = t;
+	glm::vec3 nextPosition;
+	glm::vec3 dirction(0.0f, 0.0f, 0.0f);
+
+	if (keys != 0) {
+		printf("%f %f %f\n", position.x, position.y, position.z);
+		nextPosition = position;
+		if (keys & 1)
+		{
+			nextPosition -= right * movespeed * dt;
+			dirction -= right;
+		}
+		if (keys & 2)
+		{
+			nextPosition += right * movespeed * dt;
+			dirction += right;
+		}
+		if (keys & 4)
+		{
+			nextPosition += forward * movespeed * dt;
+			dirction += forward;
+		}
+		if (keys & 8)
+		{
+			nextPosition -= forward * movespeed * dt;
+			dirction -= forward;
+		}
+		if (keys & 16)
+			position.y += movespeed * dt;
+		if (keys & 32)
+			position.y -= movespeed * dt;
+		if (checkColllision(nextPosition, dirction))
+		{
+			position = nextPosition;
+		}
+	}
+	glutPostRedisplay();
+}
+
+static void motion(int x, int y) {
+	static bool warp = false;
+	static const float mousespeed = 0.001;
+
+	if (!warp) {
+		angle.x -= (x - ww / 2) * mousespeed;
+		angle.y -= (y - wh / 2) * mousespeed;
+
+		if (angle.x < -M_PI)
+			angle.x += M_PI * 2;
+		if (angle.x > M_PI)
+			angle.x -= M_PI * 2;
+		if (angle.y < -M_PI / 2)
+			angle.y = -M_PI / 2;
+		if (angle.y > M_PI / 2)
+			angle.y = M_PI / 2;
+
+		update_vectors();
+
+		// Force the mouse pointer back to the center of the screen.
+		// This causes another call to motion(), which we need to ignore.
+		warp = true;
+		glutWarpPointer(ww / 2, wh / 2);
+	}
+	else {
+		warp = false;
+	}
+}
+
+bool canSetBlock(int x, int y, int z)
+{
+	glm::vec3 camPosition = glm::floor(position);
+	if (camPosition.x == x && camPosition.y == y && camPosition.z == z)
+	{
+		return false;
+	}
+	return true;
+}
+
+
+static void mouse(int button, int state, int x, int y) {
+	if (state != GLUT_DOWN)
+		return;
+
+	// Scrollwheel
+	if (button == 3 || button == 4) {
+		if (button == 3)
+			buildtype--;
+		else
+			buildtype++;
+
+		buildtype &= 0xf;
+		fprintf(stderr, "Building blocks of type %u (%s)\n", buildtype, blocknames[buildtype]);
+		return;
+	}
+
+	fprintf(stderr, "Clicked on %d, %d, %d, face %d, button %d\n", mx, my, mz, face, button);
+
+	if (button == 0) {
+		if (face == 0)
+			mx++;
+		if (face == 3)
+			mx--;
+		if (face == 1)
+			my++;
+		if (face == 4)
+			my--;
+		if (face == 2)
+			mz++;
+		if (face == 5)
+			mz--;
+		if (canSetBlock(mx, my, mz))
+		{
+			world->set(mx, my, mz, buildtype);
+		}
+	}
+	else {
+		world->set(mx, my, mz, 0);
+	}
+}
+
+
+void processNormalKeys(unsigned char key, int x, int y)
+{
+	switch (key) {
+	case KEY_LEFT:
+		keys |= 1;
+		break;
+	case KEY_RIGHT:
+		keys |= 2;
+		break;
+	case KEY_UP:
+		keys |= 4;
+		break;
+	case KEY_DOWN:
+		keys |= 8;
+		break;
+	case KEY_ESCAPE:
+		exit(0);
+		break;
+	default:
+		break;
+	}
+}
+
+void processNormalUpKeys(unsigned char key, int x, int y)
+{
+	switch (key) {
+	case 97:
+		keys &= ~1;
+		break;
+	case 100:
+		keys &= ~2;
+		break;
+	case 119:
+		keys &= ~4;
+		break;
+	case 115:
+		keys &= ~8;
+		break;
+	default:
+		break;
+	}
+}
+
+static void free_resources() {
+	glDeleteProgram(program);
+}
+
+int main(int argc, char* argv[]) {
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
+	glutInitWindowSize(640, 480);
+	glutCreateWindow("Minecraft");
+
+	GLenum glew_status = glewInit();
+	if (GLEW_OK != glew_status) {
+		fprintf(stderr, "Error: %s\n", glewGetErrorString(glew_status));
+		return 1;
+	}
+
+	if (!GLEW_VERSION_2_0) {
+		fprintf(stderr, "No support for OpenGL 2.0 found\n");
+		return 1;
+	}
+
+	printf("Use the mouse to look around.\n");
+	printf("Use cursor keys, pageup and pagedown to move around.\n");
+	printf("Use home and end to go to two predetermined positions.\n");
+	printf("Press the left mouse button to build a block.\n");
+	printf("Press the right mouse button to remove a block.\n");
+	printf("Use the scrollwheel to select different types of blocks.\n");
+	printf("Press F1 to toggle between depth buffer and ray casting methods for cube selection.\n");
+
+	if (init_resources()) {
+		glutSetCursor(GLUT_CURSOR_NONE);
+		glutWarpPointer(320, 240);
+		glutDisplayFunc(display);
+		glutReshapeFunc(reshape);
+		glutIdleFunc(display);
+		glutKeyboardFunc(processNormalKeys);
+		glutKeyboardUpFunc(processNormalUpKeys);
+		glutSpecialFunc(special);
+		glutSpecialUpFunc(specialup);
+		glutIdleFunc(idle);
+		glutPassiveMotionFunc(motion);
+		glutMotionFunc(motion);
+		glutMouseFunc(mouse);
+		glutMainLoop();
+	}
+
+	free_resources();
 	return 0;
-}
-
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !shadowsKeyPressed)
-	{
-		shadows = !shadows;
-		shadowsKeyPressed = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
-	{
-		shadowsKeyPressed = false;
-	}
-}
-
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-	SCR_WIDTH = width;
-	SCR_HEIGHT = height;
-	// make sure the viewport matches the new window dimensions; note that width and 
-	// height will be significantly larger than specified on retina displays.
-	glViewport(0, 0, width, height);
-}
-
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-	if (firstMouse)
-	{
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
-
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-
-	lastX = xpos;
-	lastY = ypos;
-
-	camera.ProcessMouseMovement(xoffset, yoffset);
-}
-
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ----------------------------------------------------------------------
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-	camera.ProcessMouseScroll(yoffset);
 }
