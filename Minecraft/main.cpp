@@ -466,16 +466,16 @@ void processNormalKeys(unsigned char key, int x, int y)
 void processNormalUpKeys(unsigned char key, int x, int y)
 {
 	switch (key) {
-	case 97:
+	case KEY_LEFT:
 		keys &= ~1;
 		break;
-	case 100:
+	case KEY_RIGHT:
 		keys &= ~2;
 		break;
-	case 119:
+	case KEY_UP:
 		keys &= ~4;
 		break;
-	case 115:
+	case KEY_DOWN:
 		keys &= ~8;
 		break;
 	default:
