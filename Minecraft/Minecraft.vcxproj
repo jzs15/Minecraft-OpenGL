@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="chunk.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="shader_utils.cpp" />
@@ -27,6 +28,7 @@
     <ClCompile Include="world.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="camera.h" />
     <ClInclude Include="chunk.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="shader_utils.h" />

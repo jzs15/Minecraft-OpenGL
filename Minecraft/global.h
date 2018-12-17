@@ -21,6 +21,8 @@
 #define KEY_LEFT 97
 #define KEY_RIGHT 100
 #define KEY_ESCAPE 27
+#define KEY_SPACE 32
+#define KEY_TAB 9
 
 
 static GLuint program;
@@ -29,12 +31,6 @@ static GLint uniform_mvp;
 static GLuint texture_id;
 static GLint uniform_texture;
 static GLuint cursor_vbo;
-
-static glm::vec3 position;
-static glm::vec3 forward;
-static glm::vec3 right;
-static glm::vec3 up;
-static glm::vec3 angle;
 
 static int ww, wh;
 static int mx, my, mz;
