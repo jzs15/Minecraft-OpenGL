@@ -9,6 +9,7 @@ Camera::Camera(glm::vec3 position, glm::vec3 front, float yaw, float pitch)
 	this->front = front;
 	this->yaw = yaw;
 	this->pitch = pitch;
+	this->isWalking = true;
 	this->isFalling = false;
 	this->isJumping = false;
 	this->gravitySpeed = 0.0f;
@@ -41,8 +42,8 @@ void Camera::processKeyboard(unsigned int keys, float deltaTime, World *world)
 {
 	float velocity = movementSpeed * deltaTime;
 	glm::vec3 direction(0.0f);
-	glm::vec3 curFront = isWalk ? walkFront : front;
-	glm::vec3 curRight = isWalk ? walkRight : right;
+	glm::vec3 curFront = isWalking ? walkFront : front;
+	glm::vec3 curRight = isWalking ? walkRight : right;
 	if (keys & 1)
 	{
 		direction -= curRight;
@@ -61,13 +62,13 @@ void Camera::processKeyboard(unsigned int keys, float deltaTime, World *world)
 	}
 	if ((keys & 16))
 	{
-		if (isWalk && !isFalling && !isJumping)
+		if (isWalking && !isFalling && !isJumping)
 		{
 			gravitySpeed = 0.15f;
 			isFalling = true;
 			isJumping = true;
 		}
-		else if (!isWalk)
+		else if (!isWalking)
 		{
 			direction += WORLD_UP;
 		}
@@ -114,7 +115,7 @@ glm::vec3 Camera::getRight()
 
 void Camera::gravity(World *world)
 {
-	if (!isWalk)
+	if (!isWalking)
 	{
 		return;
 	}
@@ -171,7 +172,7 @@ void Camera::gravity(World *world)
 
 void Camera::changeType()
 {
-	isWalk = !isWalk;
+	isWalking = !isWalking;
 	gravitySpeed = 0.0f;
 }
 

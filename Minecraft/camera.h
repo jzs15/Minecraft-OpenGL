@@ -52,7 +52,7 @@ private:
 	float mouseSensitivity;
 	float zoom;
 
-	bool isWalk;
+	bool isWalking;
 	bool isJumping;
 	bool isFalling;
 };
