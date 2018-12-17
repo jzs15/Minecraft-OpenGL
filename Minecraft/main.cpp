@@ -253,8 +253,8 @@ static void idle() {
 	int t = glutGet(GLUT_ELAPSED_TIME);
 	float dt = (t - pt) * 1.0e-3;
 	pt = t;
-	
-	
+
+
 	if (keys != 0)
 	{
 		camera->processKeyboard(keys, dt, world);
@@ -270,12 +270,20 @@ static void motion(int x, int y) {
 
 bool canSetBlock(int x, int y, int z)
 {
-	glm::vec3 camPosition = glm::floor(camera->getPosition());
-	if (camPosition.x == x && camPosition.y == y && camPosition.z == z)
-	{
-		return false;
-	}
-	return true;
+	glm::vec3 pos = camera->getPosition();
+	if (pos.x + 0.25 <= x)
+		return true;
+	if (x + 1 <= pos.x - 0.25)
+		return true;
+	if (pos.y + 0.1 <= y)
+		return true;
+	if (y + 1 <= pos.y - 1.4)
+		return true;
+	if (pos.z + 0.25 <= z)
+		return true;
+	if (z + 1 <= pos.z - 0.25)
+		return true;
+	return false;
 }
 
 
