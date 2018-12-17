@@ -9,6 +9,9 @@ Camera::Camera(glm::vec3 position, glm::vec3 front, float yaw, float pitch)
 	this->front = front;
 	this->yaw = yaw;
 	this->pitch = pitch;
+	this->isFalling = false;
+	this->isJumping = false;
+	this->gravitySpeed = 0.0f;
 	updateCameraVectors();
 }
 
@@ -26,28 +29,50 @@ void Camera::updateCameraVectors()
 	front = glm::normalize(newFront);
 	right = glm::normalize(glm::cross(front, WORLD_UP));
 	up = glm::normalize(glm::cross(right, front));
+
+	newFront.x = cos(glm::radians(yaw));
+	newFront.y = 0;
+	newFront.z = sin(glm::radians(yaw));
+	walkFront = glm::normalize(newFront);
+	walkRight = glm::normalize(glm::cross(walkFront, WORLD_UP));
 }
 
 void Camera::processKeyboard(unsigned int keys, float deltaTime, World *world)
 {
 	float velocity = movementSpeed * deltaTime;
 	glm::vec3 direction(0.0f);
+	glm::vec3 curFront = isWalk ? walkFront : front;
+	glm::vec3 curRight = isWalk ? walkRight : right;
 	if (keys & 1)
 	{
-		direction -= right;
+		direction -= curRight;
 	}
 	if (keys & 2)
 	{
-		direction += right;
+		direction += curRight;
 	}
 	if (keys & 4)
 	{
-		direction += front;
+		direction += curFront;
 	}
 	if (keys & 8)
 	{
-		direction -= front;
+		direction -= curFront;
 	}
+	if ((keys & 16))
+	{
+		if (isWalk && !isFalling && !isJumping)
+		{
+			gravitySpeed = 0.15f;
+			isFalling = true;
+			isJumping = true;
+		}
+		else if (!isWalk)
+		{
+			direction += WORLD_UP;
+		}
+	}
+
 	if (glm::length(direction) > 0.5)
 	{
 		direction = glm::normalize(direction) * velocity;
@@ -87,18 +112,74 @@ glm::vec3 Camera::getRight()
 	return right;
 }
 
-void Camera::setPosition(glm::vec3 pos)
+void Camera::gravity(World *world)
 {
-	position = pos;
+	if (!isWalk)
+	{
+		return;
+	}
+	if (!isFalling)
+	{
+		glm::vec3 floorPosition = glm::floor(position - glm::vec3(0.0f, 1.4f, 0.0f));
+		if (!world->get(floorPosition.x, floorPosition.y, floorPosition.z))
+		{
+			isFalling = true;
+		}
+		else
+		{
+			position.y = floorPosition.y + 2.4f;
+		}
+	}
+	if (isFalling)
+	{
+		glm::vec3 nextPosition = position - (-WORLD_UP * gravitySpeed);
+		glm::vec3 floorNextPosition = glm::floor(nextPosition);
+		glm::vec3 floorPosition = glm::floor(position);
+		if (gravitySpeed > 0.0f)
+		{
+			if (world->get(floorPosition.x, floorPosition.y + 1, floorPosition.z)
+				&& (floorPosition.y + 1 - nextPosition.y) < 0.1)
+			{
+				position.y = floorPosition.y + 1 - 0.1;
+				isFalling = false;
+				gravitySpeed = 0.0f;
+			}
+		}
+		else
+		{
+			int min_block = nextPosition.y - floorNextPosition.y > 0.4 ? 1 : 2;
+			for (int y = floorPosition.y - 1; y >= floorNextPosition.y - min_block; y--)
+			{
+				if (world->get(floorPosition.x, y, floorPosition.z))
+				{
+					position.y = (float)y + 2.4f;
+					isFalling = false;
+					isJumping = false;
+					gravitySpeed = 0.0f;
+					break;
+				}
+			}
+		}
+
+		if (isFalling)
+		{
+			position = nextPosition;
+			gravitySpeed -= 0.008f;
+		}
+	}
 }
 
+void Camera::changeType()
+{
+	isWalk = !isWalk;
+	gravitySpeed = 0.0f;
+}
 
 void Camera::setNextPosition(glm::vec3 direction, World *world)
 {
 	glm::vec3 newPosition = position + direction;
 	glm::vec3 floorPosition = glm::floor(position);
 	glm::vec3 floorNewPosition = glm::floor(newPosition);
-	std::cout << direction.y << std::endl;
 	if (direction.x >= 0 && (world->get(floorPosition.x + 1, floorPosition.y, floorPosition.z)
 		|| world->get(floorPosition.x + 1, floorPosition.y - 1, floorPosition.z))
 		&& (floorPosition.x + 1 - newPosition.x) < 0.25)
@@ -118,9 +199,9 @@ void Camera::setNextPosition(glm::vec3 direction, World *world)
 		newPosition.y = floorPosition.y + 1 - 0.1;
 	}
 	else if (direction.y < 0 && world->get(floorPosition.x, floorPosition.y - 2, floorPosition.z)
-		&& (newPosition.y - floorPosition.y) < 0.6)
+		&& (newPosition.y - floorPosition.y) < 0.4)
 	{
-		newPosition.y = floorPosition.y + 0.6;
+		newPosition.y = floorPosition.y + 0.4;
 	}
 
 	if (direction.z >= 0 && (world->get(floorPosition.x, floorPosition.y, floorPosition.z + 1)

@@ -254,17 +254,12 @@ static void idle() {
 	float dt = (t - pt) * 1.0e-3;
 	pt = t;
 	
-
-	if (keys != 0) {
-
+	
+	if (keys != 0)
+	{
 		camera->processKeyboard(keys, dt, world);
-		
-		/*
-		if (checkColllision(nextPosition, dirction))
-		{
-			camera->setPosition(nextPosition);
-		}*/
 	}
+	camera->gravity(world);
 	glutPostRedisplay();
 }
 
@@ -341,6 +336,9 @@ void processNormalKeys(unsigned char key, int x, int y)
 	case KEY_DOWN:
 		keys |= 8;
 		break;
+	case KEY_SPACE:
+		keys |= 16;
+		break;
 	case KEY_ESCAPE:
 		exit(0);
 		break;
@@ -363,6 +361,12 @@ void processNormalUpKeys(unsigned char key, int x, int y)
 		break;
 	case KEY_DOWN:
 		keys &= ~8;
+		break;
+	case KEY_SPACE:
+		keys &= ~16;
+		break;
+	case KEY_TAB:
+		camera->changeType();
 		break;
 	default:
 		break;

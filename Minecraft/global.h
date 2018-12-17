@@ -21,6 +21,8 @@
 #define KEY_LEFT 97
 #define KEY_RIGHT 100
 #define KEY_ESCAPE 27
+#define KEY_SPACE 32
+#define KEY_TAB 9
 
 
 static GLuint program;

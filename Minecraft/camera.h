@@ -10,9 +10,9 @@ enum Camera_Movement {
 	RIGHT
 };
 
-const float YAW = -90.0f;
+const float YAW = 90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 10.0f;
+const float SPEED = 7.0f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
 const glm::vec3 WORLD_UP(0.0f, 1.0f, 0.0f);
@@ -31,7 +31,8 @@ public:
 	glm::vec3 getPosition();
 	glm::vec3 getFront();
 	glm::vec3 getRight();
-	void setPosition(glm::vec3 pos);
+	void gravity(World *world);
+	void changeType();
 
 
 
@@ -40,12 +41,19 @@ private:
 	glm::vec3 front;
 	glm::vec3 up;
 	glm::vec3 right;
-	glm::vec3 camSize;
+	glm::vec3 walkFront;
+	glm::vec3 walkRight;
+
+	float gravitySpeed;
 
 	float yaw;
 	float pitch;
 	float movementSpeed;
 	float mouseSensitivity;
 	float zoom;
+
+	bool isWalk;
+	bool isJumping;
+	bool isFalling;
 };
 
