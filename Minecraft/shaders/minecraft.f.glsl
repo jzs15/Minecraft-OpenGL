@@ -36,11 +36,7 @@ void main(void) {
 		gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 		return;
 	}
-	else if (texW == 62)
-	{
-		gl_FragColor = vec4(1.0);
-		return;
-	}
+	
 	vec2 coord2d;
 	float intensity;
 	float v = int(texW / 8.0);

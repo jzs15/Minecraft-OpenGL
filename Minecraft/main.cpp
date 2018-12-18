@@ -16,8 +16,9 @@ static int init_resources() {
 	/* Create shaders */
 
 	program = create_program("shaders/minecraft.v.glsl", "shaders/minecraft.f.glsl");
+	hud = create_program("shaders/hud.v.glsl", "shaders/hud.f.glsl");
 
-	if (program == 0)
+	if (program == 0 || hud == 0)
 		return 0;
 
 	attribute_coord = get_attrib(program, "coord");
@@ -74,6 +75,42 @@ static float fract(float value) {
 		return 1 - f;
 	else
 		return f;
+}
+
+static void drawHud() {
+	glDisable(GL_DEPTH_TEST);
+	glUseProgram(hud);
+	/* Draw a cross in the center of the screen */
+	float cross_height = 20.0f / wh;
+	float cross_weight = 20.0f / ww;
+	float cross[4][4] = {
+		{-cross_weight, 0, 0, 2},
+		{cross_weight, 0, 0, 2},
+		{0, -cross_height, 0, 2},
+		{0, cross_height, 0, 2},
+	};
+	glBufferData(GL_ARRAY_BUFFER, sizeof cross, cross, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glDrawArrays(GL_LINES, 0, 4);
+
+	float hudWidth = 150.0f / ww;
+	float widthGap = 1.0 - 50.0f / ww;
+	float hudHeight = 150.0f / wh;
+	float heightGap = 1.0 - 50.0f / wh;
+	float u = (buildtype % 8) / 8.0f;
+	float v = int(buildtype / 8) / 8.0f;
+	float textureGap = 1 / 8.0f;
+	float blocksVertex[4][4] = {
+		{-widthGap, -heightGap, u, v + textureGap},
+		{-widthGap, hudHeight - heightGap, u, v},
+		{hudWidth - widthGap, hudHeight - heightGap, u + textureGap, v},
+		{hudWidth - widthGap, -heightGap, u + textureGap, v + textureGap},
+	};
+	glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glDrawArrays(GL_QUADS, 0, 4);
+	glEnable(GL_DEPTH_TEST);
+	glUseProgram(program);
 }
 
 static void display() {
@@ -183,23 +220,8 @@ static void display() {
 	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glDrawArrays(GL_LINES, 0, 24);
 
-	/* Draw a cross in the center of the screen */
-	float cross_height = 20.0f / wh;
-	float cross_weight = 20.0f / ww;
-	float cross[4][4] = {
-		{-cross_weight, 0, 0, 62},
-		{cross_weight, 0, 0, 62},
-		{0, -cross_height, 0, 62},
-		{0, cross_height, 0, 62},
-	};
 
-	glDisable(GL_DEPTH_TEST);
-	glm::mat4 one(1);
-	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(one));
-	glBufferData(GL_ARRAY_BUFFER, sizeof cross, cross, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
-	glDrawArrays(GL_LINES, 0, 4);
-
+	drawHud();
 	/* And we are done */
 
 	glutSwapBuffers();
