@@ -147,32 +147,32 @@ static void display() {
 	/* Render a box around the block we are pointing at */
 
 	float box[24][4] = {
-		{bx + 0, by + 0, bz + 0, 14},
-		{bx + 1, by + 0, bz + 0, 14},
-		{bx + 0, by + 1, bz + 0, 14},
-		{bx + 1, by + 1, bz + 0, 14},
-		{bx + 0, by + 0, bz + 1, 14},
-		{bx + 1, by + 0, bz + 1, 14},
-		{bx + 0, by + 1, bz + 1, 14},
-		{bx + 1, by + 1, bz + 1, 14},
+		{bx + 0, by + 0, bz + 0, 63},
+		{bx + 1, by + 0, bz + 0, 63},
+		{bx + 0, by + 1, bz + 0, 63},
+		{bx + 1, by + 1, bz + 0, 63},
+		{bx + 0, by + 0, bz + 1, 63},
+		{bx + 1, by + 0, bz + 1, 63},
+		{bx + 0, by + 1, bz + 1, 63},
+		{bx + 1, by + 1, bz + 1, 63},
 
-		{bx + 0, by + 0, bz + 0, 14},
-		{bx + 0, by + 1, bz + 0, 14},
-		{bx + 1, by + 0, bz + 0, 14},
-		{bx + 1, by + 1, bz + 0, 14},
-		{bx + 0, by + 0, bz + 1, 14},
-		{bx + 0, by + 1, bz + 1, 14},
-		{bx + 1, by + 0, bz + 1, 14},
-		{bx + 1, by + 1, bz + 1, 14},
+		{bx + 0, by + 0, bz + 0, 63},
+		{bx + 0, by + 1, bz + 0, 63},
+		{bx + 1, by + 0, bz + 0, 63},
+		{bx + 1, by + 1, bz + 0, 63},
+		{bx + 0, by + 0, bz + 1, 63},
+		{bx + 0, by + 1, bz + 1, 63},
+		{bx + 1, by + 0, bz + 1, 63},
+		{bx + 1, by + 1, bz + 1, 63},
 
-		{bx + 0, by + 0, bz + 0, 14},
-		{bx + 0, by + 0, bz + 1, 14},
-		{bx + 1, by + 0, bz + 0, 14},
-		{bx + 1, by + 0, bz + 1, 14},
-		{bx + 0, by + 1, bz + 0, 14},
-		{bx + 0, by + 1, bz + 1, 14},
-		{bx + 1, by + 1, bz + 0, 14},
-		{bx + 1, by + 1, bz + 1, 14},
+		{bx + 0, by + 0, bz + 0, 63},
+		{bx + 0, by + 0, bz + 1, 63},
+		{bx + 1, by + 0, bz + 0, 63},
+		{bx + 1, by + 0, bz + 1, 63},
+		{bx + 0, by + 1, bz + 0, 63},
+		{bx + 0, by + 1, bz + 1, 63},
+		{bx + 1, by + 1, bz + 0, 63},
+		{bx + 1, by + 1, bz + 1, 63},
 	};
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
@@ -187,10 +187,10 @@ static void display() {
 	float cross_height = 20.0f / wh;
 	float cross_weight = 20.0f / ww;
 	float cross[4][4] = {
-		{-cross_weight, 0, 0, 13},
-		{cross_weight, 0, 0, 13},
-		{0, -cross_height, 0, 13},
-		{0, cross_height, 0, 13},
+		{-cross_weight, 0, 0, 62},
+		{cross_weight, 0, 0, 62},
+		{0, -cross_height, 0, 62},
+		{0, cross_height, 0, 62},
 	};
 
 	glDisable(GL_DEPTH_TEST);
@@ -270,6 +270,8 @@ static void motion(int x, int y) {
 
 bool canSetBlock(int x, int y, int z)
 {
+	if (world->get(x, y, z))
+		return false;
 	glm::vec3 pos = camera->getPosition();
 	if (pos.x + 0.25 <= x)
 		return true;
@@ -294,11 +296,27 @@ static void mouse(int button, int state, int x, int y) {
 	// Scrollwheel
 	if (button == 3 || button == 4) {
 		if (button == 3)
-			buildtype--;
+		{
+			if (buildtype == 0)
+			{
+				buildtype = 43;
+			}
+			else
+			{
+				buildtype--;
+			}
+		}
 		else
-			buildtype++;
-
-		buildtype &= 0xf;
+		{
+			if (buildtype == 43)
+			{
+				buildtype = 0;
+			}
+			else
+			{
+				buildtype++;
+			}
+		}
 		fprintf(stderr, "Building blocks of type %u (%s)\n", buildtype, blocknames[buildtype]);
 		return;
 	}

@@ -41,7 +41,11 @@ static time_t now;
 static unsigned int keys;
 static bool select_using_depthbuffer = false;
 
-static const char *blocknames[16] = {
-	"air", "dirt", "topsoil", "grass", "leaves", "wood", "stone", "sand",
-	"water", "glass", "brick", "ore", "woodrings", "white", "black", "x-y"
+static const char *blocknames[44] = {
+	"Air", "Stone", "Grass Block", "Dirt", "Cobblestone", "Planks", "Sand", "Glass", 
+	"Bricks", "Water", "Coal Ore", "Iron Ore", "Gold Ore", "Diamond Ore", "Emetald Ore", "Redstone Ore",
+	"Lapis Ore", "Coal Block", "Iron Block", "Gold Block", "Diamond Block", "Emetald Block", "Redstone Block", "Lapis Block",
+	"Oak Leaves", "Oak Log", "Jungle Leaves", "Jungle Log", "TNT", "White Block", "Yellow Block","Green Block",
+	"Blue Block", "Red Block", "Black Block", "Dandelion", "Daisy", "Orange Tulip", "Pink Tulip", "Poppy", 
+	"Brown Mushroom", "Red Mushroom", "Grass", "Torch"
 };
