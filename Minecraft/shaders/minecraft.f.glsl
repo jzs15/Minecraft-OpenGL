@@ -1,4 +1,6 @@
-varying vec4 texcoord;
+#version 330 core
+in vec4 texcoord;
+in float textype;
 uniform sampler2D texture;
 
 const vec4 fogcolor = vec4(0.6, 0.8, 1.0, 1.0);

@@ -53,6 +53,12 @@ uint8_t World::get(int x, int y, int z) const {
 	return c[cx][cy][cz]->get(x & (CX - 1), y & (CY - 1), z & (CZ - 1));
 }
 
+bool World::isBlock(int x, int y, int z)
+{
+	uint8_t block = get(x, y, z);
+	return (block && transparent[block] != 5);
+}
+
 void World::set(int x, int y, int z, uint8_t type) {
 	int cx = (x + CX * (SCX / 2)) / CX;
 	int cy = (y + CY * (SCY / 2)) / CY;
@@ -62,6 +68,17 @@ void World::set(int x, int y, int z, uint8_t type) {
 		return;
 
 	c[cx][cy][cz]->set(x & (CX - 1), y & (CY - 1), z & (CZ - 1), type);
+}
+
+bool World::canSetBlock(int x, int y, int z, uint8_t blk)
+{
+	if (get(x, y, z))
+		return false;
+	if (transparent[blk] == 5)
+		return isBlock(x, y - 1, z);
+	return isBlock(x, y, z + 1) || isBlock(x, y, z - 1) || isBlock(x, y + 1, z) || isBlock(x, y - 1, z) ||
+		isBlock(x + 1, y, z) || isBlock(x - 1, y, z);
+
 }
 
 void World::render(const glm::mat4 &pv) {

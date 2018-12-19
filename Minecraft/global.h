@@ -28,6 +28,7 @@
 static GLuint program;
 static GLuint hud;
 static GLint attribute_coord;
+static GLint attribute_type;
 static GLint uniform_mvp;
 static GLuint texture_id;
 static GLint uniform_texture;

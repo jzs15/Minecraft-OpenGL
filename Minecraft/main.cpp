@@ -292,7 +292,7 @@ static void motion(int x, int y) {
 
 bool canSetBlock(int x, int y, int z)
 {
-	if (world->get(x, y, z))
+	if (!world->canSetBlock(x, y, z, buildtype))
 		return false;
 	glm::vec3 pos = camera->getPosition();
 	if (pos.x + 0.25 <= x)
