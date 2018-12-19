@@ -41,7 +41,6 @@ static uint8_t buildtype = 1;
 
 static time_t now;
 static unsigned int keys;
-static bool select_using_depthbuffer = false;
 
 static const char *blocknames[44] = {
 	"Air", "Stone", "Grass Block", "Dirt", "Cobblestone", "Planks", "Sand", "Glass", 

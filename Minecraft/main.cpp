@@ -229,35 +229,6 @@ static void display() {
 	glutSwapBuffers();
 }
 
-static void special(int key, int x, int y) {
-	switch (key) {
-	case GLUT_KEY_PAGE_UP:
-		keys |= 16;
-		break;
-	case GLUT_KEY_PAGE_DOWN:
-		keys |= 32;
-		break;
-	case GLUT_KEY_F1:
-		select_using_depthbuffer = !select_using_depthbuffer;
-		if (select_using_depthbuffer)
-			printf("Using depth buffer selection method\n");
-		else
-			printf("Using ray casting selection method\n");
-		break;
-	}
-}
-
-static void specialup(int key, int x, int y) {
-	switch (key) {
-	case GLUT_KEY_PAGE_UP:
-		keys &= ~16;
-		break;
-	case GLUT_KEY_PAGE_DOWN:
-		keys &= ~32;
-		break;
-	}
-}
-
 bool checkColllision(glm::vec3 nextPosition, glm::vec3 direction)
 {
 	float camSize = 0.5f;
@@ -460,8 +431,6 @@ int main(int argc, char* argv[]) {
 		glutIdleFunc(display);
 		glutKeyboardFunc(processNormalKeys);
 		glutKeyboardUpFunc(processNormalUpKeys);
-		glutSpecialFunc(special);
-		glutSpecialUpFunc(specialup);
 		glutIdleFunc(idle);
 		glutPassiveMotionFunc(motion);
 		glutMotionFunc(motion);
