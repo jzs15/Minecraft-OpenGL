@@ -182,34 +182,33 @@ static void display() {
 	float bz = mz;
 
 	/* Render a box around the block we are pointing at */
+	float box[24][5] = {
+		{bx + 0, by + 0, bz + 0, 63, 0},
+		{bx + 1, by + 0, bz + 0, 63, 0},
+		{bx + 0, by + 1, bz + 0, 63, 0},
+		{bx + 1, by + 1, bz + 0, 63, 0},
+		{bx + 0, by + 0, bz + 1, 63, 0},
+		{bx + 1, by + 0, bz + 1, 63, 0},
+		{bx + 0, by + 1, bz + 1, 63, 0},
+		{bx + 1, by + 1, bz + 1, 63, 0},
 
-	float box[24][4] = {
-		{bx + 0, by + 0, bz + 0, 63},
-		{bx + 1, by + 0, bz + 0, 63},
-		{bx + 0, by + 1, bz + 0, 63},
-		{bx + 1, by + 1, bz + 0, 63},
-		{bx + 0, by + 0, bz + 1, 63},
-		{bx + 1, by + 0, bz + 1, 63},
-		{bx + 0, by + 1, bz + 1, 63},
-		{bx + 1, by + 1, bz + 1, 63},
+		{bx + 0, by + 0, bz + 0, 63, 0},
+		{bx + 0, by + 1, bz + 0, 63, 0},
+		{bx + 1, by + 0, bz + 0, 63, 0},
+		{bx + 1, by + 1, bz + 0, 63, 0},
+		{bx + 0, by + 0, bz + 1, 63, 0},
+		{bx + 0, by + 1, bz + 1, 63, 0},
+		{bx + 1, by + 0, bz + 1, 63, 0},
+		{bx + 1, by + 1, bz + 1, 63, 0},
 
-		{bx + 0, by + 0, bz + 0, 63},
-		{bx + 0, by + 1, bz + 0, 63},
-		{bx + 1, by + 0, bz + 0, 63},
-		{bx + 1, by + 1, bz + 0, 63},
-		{bx + 0, by + 0, bz + 1, 63},
-		{bx + 0, by + 1, bz + 1, 63},
-		{bx + 1, by + 0, bz + 1, 63},
-		{bx + 1, by + 1, bz + 1, 63},
-
-		{bx + 0, by + 0, bz + 0, 63},
-		{bx + 0, by + 0, bz + 1, 63},
-		{bx + 1, by + 0, bz + 0, 63},
-		{bx + 1, by + 0, bz + 1, 63},
-		{bx + 0, by + 1, bz + 0, 63},
-		{bx + 0, by + 1, bz + 1, 63},
-		{bx + 1, by + 1, bz + 0, 63},
-		{bx + 1, by + 1, bz + 1, 63},
+		{bx + 0, by + 0, bz + 0, 63, 0},
+		{bx + 0, by + 0, bz + 1, 63, 0},
+		{bx + 1, by + 0, bz + 0, 63, 0},
+		{bx + 1, by + 0, bz + 1, 63, 0},
+		{bx + 0, by + 1, bz + 0, 63, 0},
+		{bx + 0, by + 1, bz + 1, 63, 0},
+		{bx + 1, by + 1, bz + 0, 63, 0},
+		{bx + 1, by + 1, bz + 1, 63, 0},
 	};
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
@@ -217,7 +216,10 @@ static void display() {
 	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
 	glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof box, box, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 1, GL_BYTE, GL_FALSE, 5 * sizeof(float), (void*)(4 * sizeof(float)));
+	glEnableVertexAttribArray(attribute_coord);
 	glDrawArrays(GL_LINES, 0, 24);
 
 
