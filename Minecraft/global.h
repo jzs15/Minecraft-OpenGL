@@ -21,20 +21,26 @@
 #define KEY_LEFT 97
 #define KEY_RIGHT 100
 #define KEY_ESCAPE 27
+#define KEY_SPACE 32
+#define KEY_ENTER 13
+#define KEY_TAB 9
 
-
+static GLuint light_shader;
+static GLuint simpleDepthShader;
 static GLuint program;
+static GLuint hud;
 static GLint attribute_coord;
 static GLint uniform_mvp;
 static GLuint texture_id;
 static GLint uniform_texture;
 static GLuint cursor_vbo;
 
-static glm::vec3 position;
-static glm::vec3 forward;
-static glm::vec3 right;
-static glm::vec3 up;
-static glm::vec3 angle;
+static glm::vec3 lightPos;
+
+static unsigned int SHADOW_WIDTH, SHADOW_HEIGHT;
+static unsigned int depthMapFBO;
+static unsigned int depthCubemap;
+static bool shadows;
 
 static int ww, wh;
 static int mx, my, mz;
@@ -44,8 +50,13 @@ static uint8_t buildtype = 1;
 static time_t now;
 static unsigned int keys;
 static bool select_using_depthbuffer = false;
+static bool enter_press = false;
 
-static const char *blocknames[16] = {
-	"air", "dirt", "topsoil", "grass", "leaves", "wood", "stone", "sand",
-	"water", "glass", "brick", "ore", "woodrings", "white", "black", "x-y"
+static const char *blocknames[44] = {
+	"Air", "Stone", "Grass Block", "Dirt", "Cobblestone", "Planks", "Sand", "Glass",
+	"Bricks", "Water", "Coal Ore", "Iron Ore", "Gold Ore", "Diamond Ore", "Emetald Ore", "Redstone Ore",
+	"Lapis Ore", "Coal Block", "Iron Block", "Gold Block", "Diamond Block", "Emetald Block", "Redstone Block", "Lapis Block",
+	"Oak Leaves", "Oak Log", "Jungle Leaves", "Jungle Log", "TNT", "White Block", "Yellow Block","Green Block",
+	"Blue Block", "Red Block", "Black Block", "Dandelion", "Daisy", "Orange Tulip", "Pink Tulip", "Poppy",
+	"Brown Mushroom", "Red Mushroom", "Grass", "Torch"
 };

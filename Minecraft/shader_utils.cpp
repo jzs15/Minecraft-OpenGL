@@ -69,35 +69,7 @@ GLuint create_shader(const char* filename, GLenum type)
     return 0;
   }
   GLuint res = glCreateShader(type);
-  const GLchar* sources[] = {
-    // Define GLSL version
-#ifdef GL_ES_VERSION_2_0
-    "#version 100\n"  // OpenGL ES 2.0
-#else
-    "#version 120\n"  // OpenGL 2.1
-#endif
-    ,
-    // GLES2 precision specifiers
-#ifdef GL_ES_VERSION_2_0
-    // Define default float precision for fragment shaders:
-    (type == GL_FRAGMENT_SHADER) ?
-    "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
-    "precision highp float;           \n"
-    "#else                            \n"
-    "precision mediump float;         \n"
-    "#endif                           \n"
-    : ""
-    // Note: OpenGL ES automatically defines this:
-    // #define GL_ES
-#else
-    // Ignore GLES 2 precision specifiers:
-    "#define lowp   \n"
-    "#define mediump\n"
-    "#define highp  \n"
-#endif
-    ,
-    source };
-  glShaderSource(res, 3, sources, NULL);
+  glShaderSource(res, 1, &source, NULL);
   free((void*)source);
 
   glCompileShader(res);
@@ -113,7 +85,7 @@ GLuint create_shader(const char* filename, GLenum type)
   return res;
 }
 
-GLuint create_program(const char *vertexfile, const char *fragmentfile) {
+GLuint create_program(const char *vertexfile, const char *fragmentfile, const char *geometryfile) {
 	GLuint program = glCreateProgram();
 	GLuint shader;
 
@@ -127,6 +99,13 @@ GLuint create_program(const char *vertexfile, const char *fragmentfile) {
 	if(fragmentfile) {
 		shader = create_shader(fragmentfile, GL_FRAGMENT_SHADER);
 		if(!shader)
+			return 0;
+		glAttachShader(program, shader);
+	}
+
+	if (geometryfile) {
+		shader = create_shader(geometryfile, GL_GEOMETRY_SHADER);
+		if (!shader)
 			return 0;
 		glAttachShader(program, shader);
 	}

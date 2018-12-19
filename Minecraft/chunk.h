@@ -30,7 +30,7 @@ public:
 
 private:
 	uint8_t blk[CX][CY][CZ];
-	
+
 	int slot;
 	GLuint vbo;
 	int elements;
@@ -39,5 +39,10 @@ private:
 	bool noised;
 };
 
-static const int transparent[16] = { 2, 0, 0, 0, 1, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 0 };
+static const int transparent[44] = { 2, 0, 0, 0, 0, 0, 0, 4,
+									 0, 3, 0, 0, 0, 0, 0, 0,
+									 0, 0, 0, 0, 0, 0, 0, 0,
+									 1, 0, 1, 0, 0, 0, 0, 0,
+									 0, 0, 0, 1, 1, 1, 1, 1,
+									 1, 1, 1, 1 };
 static Chunk *chunk_slot[CHUNKSLOTS];

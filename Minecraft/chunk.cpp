@@ -158,24 +158,24 @@ void Chunk::noise(int seed) {
 				if (y + ay * CY >= h) {
 					// If we are not yet up to sea level, fill with water blocks
 					if (y + ay * CY < SEALEVEL) {
-						blk[x][y][z] = 8;
+						blk[x][y][z] = 9;
 						continue;
 						// Otherwise, we are in the air
 					}
 					else {
 						// A tree!
-						if (get(x, y - 1, z) == 3 && (rand() & 0xff) == 0) {
+						if (get(x, y - 1, z) == 2 && (rand() & 0xff) == 0) {
 							// Trunk
 							h = (rand() & 0x3) + 3;
 							for (int i = 0; i < h; i++)
-								set(x, y + i, z, 5);
+								set(x, y + i, z, 25);
 
 							// Leaves
 							for (int ix = -3; ix <= 3; ix++) {
 								for (int iy = -3; iy <= 3; iy++) {
 									for (int iz = -3; iz <= 3; iz++) {
 										if (ix * ix + iy * iy + iz * iz < 8 + (rand() & 1) && !get(x + ix, y + h + iy, z + iz))
-											set(x + ix, y + h + iy, z + iz, 4);
+											set(x + ix, y + h + iy, z + iz, 24);
 									}
 								}
 							}
@@ -189,16 +189,16 @@ void Chunk::noise(int seed) {
 
 				// Sand layer
 				if (n + r * 5 < 4)
-					blk[x][y][z] = 7;
+					blk[x][y][z] = 6;
 				// Dirt layer, but use grass blocks for the top
 				else if (n + r * 5 < 8)
-					blk[x][y][z] = (h < SEALEVEL || y + ay * CY < h - 1) ? 1 : 3;
+					blk[x][y][z] = (h < SEALEVEL || y + ay * CY < h - 1) ? 3 : 2;
 				// Rock layer
 				else if (r < 1.25)
-					blk[x][y][z] = 6;
+					blk[x][y][z] = 1;
 				// Sometimes, ores!
 				else
-					blk[x][y][z] = 11;
+					blk[x][y][z] = 10;
 			}
 		}
 	}
@@ -221,20 +221,7 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
 				uint8_t side = blk[x][y][z];
-
-				// Grass block has dirt sides and bottom
-				if (top == 3) {
-					bottom = 1;
-					side = 2;
-					// Wood blocks have rings on top and bottom
-				}
-				else if (top == 5) {
-					top = bottom = 12;
-				}
 
 				// Same block as previous one? Extend it.
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
@@ -267,18 +254,7 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
 				uint8_t side = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
-					side = 2;
-				}
-				else if (top == 5) {
-					top = bottom = 12;
-				}
 
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
 					vertex[i - 4] = byte4(x + 1, y, z + 1, side);
@@ -308,15 +284,22 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
 				uint8_t bottom = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
+				if (bottom == 2)
+				{
+					bottom = 3;
 				}
-				else if (top == 5) {
-					top = bottom = 12;
+				else if (bottom == 25)
+				{
+					bottom = 57;
+				}
+				else if (bottom == 27)
+				{
+					bottom = 58;
+				}
+				else if (bottom == 28)
+				{
+					bottom = 59;
 				}
 
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
@@ -347,15 +330,21 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
 				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
+				if (top == 2) {
+					top = 56;
 				}
-				else if (top == 5) {
-					top = bottom = 12;
+				else if (top == 25)
+				{
+					top = 57;
+				}
+				else if (top == 27)
+				{
+					top = 58;
+				}
+				else if (top == 28)
+				{
+					top = 60;
 				}
 
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
@@ -386,18 +375,7 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
 				uint8_t side = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
-					side = 2;
-				}
-				else if (top == 5) {
-					top = bottom = 12;
-				}
 
 				if (vis && y != 0 && blk[x][y][z] == blk[x][y - 1][z]) {
 					vertex[i - 5] = byte4(x, y + 1, z, side);
@@ -427,18 +405,7 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
 				uint8_t side = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
-					side = 2;
-				}
-				else if (top == 5) {
-					top = bottom = 12;
-				}
 
 				if (vis && y != 0 && blk[x][y][z] == blk[x][y - 1][z]) {
 					vertex[i - 4] = byte4(x, y + 1, z + 1, side);

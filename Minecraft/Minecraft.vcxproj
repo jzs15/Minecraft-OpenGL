@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="chunk.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="shader_utils.cpp" />
@@ -27,8 +28,10 @@
     <ClCompile Include="world.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="camera.h" />
     <ClInclude Include="chunk.h" />
     <ClInclude Include="global.h" />
+    <ClInclude Include="shader.h" />
     <ClInclude Include="shader_utils.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture.h" />
@@ -38,7 +41,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{9572EBEE-35E7-4BCC-96DA-671BC5047064}</ProjectGuid>
     <RootNamespace>Minecraft</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -96,8 +99,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IncludePath>D:\Sources\Repos\VisualStudio\Minecraft\Minecraft\includes;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Sources\Repos\VisualStudio\Minecraft\Minecraft\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\youkg\source\repos\jzs15\Minecraft\Minecraft\includes;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\youkg\source\repos\jzs15\Minecraft\Minecraft\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -108,6 +111,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>glfw3.lib;glew32s.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -132,6 +136,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>glfw3.lib;glew32s.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

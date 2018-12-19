@@ -6,27 +6,19 @@
 #include "world.h"
 #include "texture.h"
 #include "shader_utils.h"
+#include "camera.h"
 
 
 static World *world;
-
-static void update_vectors() {
-	forward.x = sinf(angle.x) * cosf(angle.y);
-	forward.y = sinf(angle.y);
-	forward.z = cosf(angle.x) * cosf(angle.y);
-	forward = glm::normalize(forward);
-
-	right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
-
-	up = glm::cross(right, forward);
-}
+static Camera *camera;
 
 static int init_resources() {
 	/* Create shaders */
 
-	program = create_program("shaders/minecraft.v.glsl", "shaders/minecraft.f.glsl");
+	program = create_program("shaders/minecraft.v.glsl", "shaders/minecraft.f.glsl", NULL);
+	hud = create_program("shaders/hud.v.glsl", "shaders/hud.f.glsl", NULL);
 
-	if (program == 0)
+	if (program == 0 || hud == 0)
 		return 0;
 
 	attribute_coord = get_attrib(program, "coord");
@@ -47,10 +39,7 @@ static int init_resources() {
 	/* Create the world */
 
 	world = new World();
-
-	position = glm::vec3(0, CY + 1, 0);
-	angle = glm::vec3(0, -0.5, 0);
-	update_vectors();
+	camera = new Camera(glm::vec3(0, CY + 1, 0), glm::vec3(0.0f, -1.0f, 0.0f));
 
 	/* Create a VBO for the cursor */
 
@@ -88,8 +77,44 @@ static float fract(float value) {
 		return f;
 }
 
+static void drawHud() {
+	glDisable(GL_DEPTH_TEST);
+	glUseProgram(hud);
+	/* Draw a cross in the center of the screen */
+	float cross_height = 20.0f / wh;
+	float cross_weight = 20.0f / ww;
+	float cross[4][4] = {
+		{-cross_weight, 0, 0, 2},
+		{cross_weight, 0, 0, 2},
+		{0, -cross_height, 0, 2},
+		{0, cross_height, 0, 2},
+	};
+	glBufferData(GL_ARRAY_BUFFER, sizeof cross, cross, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glDrawArrays(GL_LINES, 0, 4);
+
+	float hudWidth = 150.0f / ww;
+	float widthGap = 1.0 - 50.0f / ww;
+	float hudHeight = 150.0f / wh;
+	float heightGap = 1.0 - 50.0f / wh;
+	float u = (buildtype % 8) / 8.0f;
+	float v = int(buildtype / 8) / 8.0f;
+	float textureGap = 1 / 8.0f;
+	float blocksVertex[4][4] = {
+		{-widthGap, -heightGap, u, v + textureGap},
+		{-widthGap, hudHeight - heightGap, u, v},
+		{hudWidth - widthGap, hudHeight - heightGap, u + textureGap, v},
+		{hudWidth - widthGap, -heightGap, u + textureGap, v + textureGap},
+	};
+	glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glDrawArrays(GL_QUADS, 0, 4);
+	glEnable(GL_DEPTH_TEST);
+	glUseProgram(program);
+}
+
 static void display() {
-	glm::mat4 view = glm::lookAt(position, position + forward, up);
+	glm::mat4 view = camera->getViewMatrix();
 	glm::mat4 projection = glm::perspective(45.0f, 1.0f*ww / wh, 0.01f, 1000.0f);
 
 	glm::mat4 mvp = projection * view;
@@ -106,94 +131,50 @@ static void display() {
 
 	/* At which voxel are we looking? */
 
-	if (select_using_depthbuffer) {
-		/* Find out coordinates of the center pixel */
 
-		float depth;
-		glReadPixels(ww / 2, wh / 2, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+	glm::vec3 testpos = camera->getPosition();
+	glm::vec3 prevpos = testpos;
+	glm::vec3 front = camera->getFront();
 
-		glm::vec4 viewport = glm::vec4(0, 0, ww, wh);
-		glm::vec3 wincoord = glm::vec3(ww / 2, wh / 2, depth);
-		glm::vec3 objcoord = glm::unProject(wincoord, view, projection, viewport);
+	for (int i = 0; i < 100; i++) {
+		/* Advance from our currect position to the direction we are looking at, in small steps */
 
-		/* Find out which block it belongs to */
+		prevpos = testpos;
+		testpos += front * 0.1f;
 
-		mx = objcoord.x;
-		my = objcoord.y;
-		mz = objcoord.z;
-		if (objcoord.x < 0)
-			mx--;
-		if (objcoord.y < 0)
-			my--;
-		if (objcoord.z < 0)
-			mz--;
+		mx = floorf(testpos.x);
+		my = floorf(testpos.y);
+		mz = floorf(testpos.z);
 
-		/* Find out which face of the block we are looking at */
+		/* If we find a block that is not air, we are done */
 
-		if (fract(objcoord.x) < fract(objcoord.y))
-			if (fract(objcoord.x) < fract(objcoord.z))
-				face = 0; // X
-			else
-				face = 2; // Z
-		else
-			if (fract(objcoord.y) < fract(objcoord.z))
-				face = 1; // Y
-			else
-				face = 2; // Z
-
-		if (face == 0 && forward.x > 0)
-			face += 3;
-		if (face == 1 && forward.y > 0)
-			face += 3;
-		if (face == 2 && forward.z > 0)
-			face += 3;
+		if (world->get(mx, my, mz))
+			break;
 	}
-	else {
-		/* Very naive ray casting algorithm to find out which block we are looking at */
 
-		glm::vec3 testpos = position;
-		glm::vec3 prevpos = position;
+	/* Find out which face of the block we are looking at */
 
-		for (int i = 0; i < 100; i++) {
-			/* Advance from our currect position to the direction we are looking at, in small steps */
+	int px = floorf(prevpos.x);
+	int py = floorf(prevpos.y);
+	int pz = floorf(prevpos.z);
 
-			prevpos = testpos;
-			testpos += forward * 0.1f;
+	if (px > mx)
+		face = 0;
+	else if (px < mx)
+		face = 3;
+	else if (py > my)
+		face = 1;
+	else if (py < my)
+		face = 4;
+	else if (pz > mz)
+		face = 2;
+	else if (pz < mz)
+		face = 5;
 
-			mx = floorf(testpos.x);
-			my = floorf(testpos.y);
-			mz = floorf(testpos.z);
-
-			/* If we find a block that is not air, we are done */
-
-			if (world->get(mx, my, mz))
-				break;
-		}
-
-		/* Find out which face of the block we are looking at */
-
-		int px = floorf(prevpos.x);
-		int py = floorf(prevpos.y);
-		int pz = floorf(prevpos.z);
-
-		if (px > mx)
-			face = 0;
-		else if (px < mx)
-			face = 3;
-		else if (py > my)
-			face = 1;
-		else if (py < my)
-			face = 4;
-		else if (pz > mz)
-			face = 2;
-		else if (pz < mz)
-			face = 5;
-
-		/* If we are looking at air, move the cursor out of sight */
-		if (!world->get(mx, my, mz))
-		{ 
-			mx = my = mz = 99999;
-		}
+	/* If we are looking at air, move the cursor out of sight */
+	if (!world->get(mx, my, mz))
+	{
+		mx = my = mz = 99999;
 	}
 
 	float bx = mx;
@@ -203,32 +184,32 @@ static void display() {
 	/* Render a box around the block we are pointing at */
 
 	float box[24][4] = {
-		{bx + 0, by + 0, bz + 0, 14},
-		{bx + 1, by + 0, bz + 0, 14},
-		{bx + 0, by + 1, bz + 0, 14},
-		{bx + 1, by + 1, bz + 0, 14},
-		{bx + 0, by + 0, bz + 1, 14},
-		{bx + 1, by + 0, bz + 1, 14},
-		{bx + 0, by + 1, bz + 1, 14},
-		{bx + 1, by + 1, bz + 1, 14},
+		{bx + 0, by + 0, bz + 0, 63},
+		{bx + 1, by + 0, bz + 0, 63},
+		{bx + 0, by + 1, bz + 0, 63},
+		{bx + 1, by + 1, bz + 0, 63},
+		{bx + 0, by + 0, bz + 1, 63},
+		{bx + 1, by + 0, bz + 1, 63},
+		{bx + 0, by + 1, bz + 1, 63},
+		{bx + 1, by + 1, bz + 1, 63},
 
-		{bx + 0, by + 0, bz + 0, 14},
-		{bx + 0, by + 1, bz + 0, 14},
-		{bx + 1, by + 0, bz + 0, 14},
-		{bx + 1, by + 1, bz + 0, 14},
-		{bx + 0, by + 0, bz + 1, 14},
-		{bx + 0, by + 1, bz + 1, 14},
-		{bx + 1, by + 0, bz + 1, 14},
-		{bx + 1, by + 1, bz + 1, 14},
+		{bx + 0, by + 0, bz + 0, 63},
+		{bx + 0, by + 1, bz + 0, 63},
+		{bx + 1, by + 0, bz + 0, 63},
+		{bx + 1, by + 1, bz + 0, 63},
+		{bx + 0, by + 0, bz + 1, 63},
+		{bx + 0, by + 1, bz + 1, 63},
+		{bx + 1, by + 0, bz + 1, 63},
+		{bx + 1, by + 1, bz + 1, 63},
 
-		{bx + 0, by + 0, bz + 0, 14},
-		{bx + 0, by + 0, bz + 1, 14},
-		{bx + 1, by + 0, bz + 0, 14},
-		{bx + 1, by + 0, bz + 1, 14},
-		{bx + 0, by + 1, bz + 0, 14},
-		{bx + 0, by + 1, bz + 1, 14},
-		{bx + 1, by + 1, bz + 0, 14},
-		{bx + 1, by + 1, bz + 1, 14},
+		{bx + 0, by + 0, bz + 0, 63},
+		{bx + 0, by + 0, bz + 1, 63},
+		{bx + 1, by + 0, bz + 0, 63},
+		{bx + 1, by + 0, bz + 1, 63},
+		{bx + 0, by + 1, bz + 0, 63},
+		{bx + 0, by + 1, bz + 1, 63},
+		{bx + 1, by + 1, bz + 0, 63},
+		{bx + 1, by + 1, bz + 1, 63},
 	};
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
@@ -239,22 +220,8 @@ static void display() {
 	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glDrawArrays(GL_LINES, 0, 24);
 
-	/* Draw a cross in the center of the screen */
 
-	float cross[4][4] = {
-		{-0.05, 0, 0, 13},
-		{+0.05, 0, 0, 13},
-		{0, -0.05, 0, 13},
-		{0, +0.05, 0, 13},
-	};
-
-	glDisable(GL_DEPTH_TEST);
-	glm::mat4 one(1);
-	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(one));
-	glBufferData(GL_ARRAY_BUFFER, sizeof cross, cross, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
-	glDrawArrays(GL_LINES, 0, 4);
-
+	drawHud();
 	/* And we are done */
 
 	glutSwapBuffers();
@@ -262,21 +229,17 @@ static void display() {
 
 static void special(int key, int x, int y) {
 	switch (key) {
-	case GLUT_KEY_PAGE_UP:
-		keys |= 16;
+	case GLUT_KEY_LEFT:
+		keys |= 64;
 		break;
-	case GLUT_KEY_PAGE_DOWN:
-		keys |= 32;
+	case GLUT_KEY_RIGHT:
+		keys |= 128;
 		break;
-	case GLUT_KEY_HOME:
-		position = glm::vec3(0, CY + 1, 0);
-		angle = glm::vec3(0, -0.5, 0);
-		update_vectors();
+	case GLUT_KEY_UP:
+		keys |= 256;
 		break;
-	case GLUT_KEY_END:
-		position = glm::vec3(0, CX * SCX, 0);
-		angle = glm::vec3(0, -M_PI * 0.49, 0);
-		update_vectors();
+	case GLUT_KEY_DOWN:
+		keys |= 512;
 		break;
 	case GLUT_KEY_F1:
 		select_using_depthbuffer = !select_using_depthbuffer;
@@ -290,113 +253,61 @@ static void special(int key, int x, int y) {
 
 static void specialup(int key, int x, int y) {
 	switch (key) {
-	case GLUT_KEY_PAGE_UP:
-		keys &= ~16;
+	case GLUT_KEY_LEFT:
+		keys &= ~64;
 		break;
-	case GLUT_KEY_PAGE_DOWN:
-		keys &= ~32;
+	case GLUT_KEY_RIGHT:
+		keys &= ~128;
+		break;
+	case GLUT_KEY_UP:
+		keys &= ~256;
+		break;
+	case GLUT_KEY_DOWN:
+		keys &= ~512;
 		break;
 	}
-}
-
-bool checkColllision(glm::vec3 nextPosition, glm::vec3 direction)
-{
-	float camSize = 0.5f;
-	direction = glm::normalize(direction);
-	glm::vec3 camPosition = glm::floor(nextPosition + direction * camSize);
-	if (world->get(camPosition.x, camPosition.y, camPosition.z))
-	{
-		printf("Collision: %d %d %d\n", camPosition.x, camPosition.y, camPosition.z);
-		return false;
-	}
-	return true;
 }
 
 static void idle() {
 	static int pt = 0;
-	static const float movespeed = 10;
-
 	now = time(0);
 	int t = glutGet(GLUT_ELAPSED_TIME);
 	float dt = (t - pt) * 1.0e-3;
 	pt = t;
-	glm::vec3 nextPosition;
-	glm::vec3 dirction(0.0f, 0.0f, 0.0f);
 
-	if (keys != 0) {
-		printf("%f %f %f\n", position.x, position.y, position.z);
-		nextPosition = position;
-		if (keys & 1)
-		{
-			nextPosition -= right * movespeed * dt;
-			dirction -= right;
-		}
-		if (keys & 2)
-		{
-			nextPosition += right * movespeed * dt;
-			dirction += right;
-		}
-		if (keys & 4)
-		{
-			nextPosition += forward * movespeed * dt;
-			dirction += forward;
-		}
-		if (keys & 8)
-		{
-			nextPosition -= forward * movespeed * dt;
-			dirction -= forward;
-		}
-		if (keys & 16)
-			position.y += movespeed * dt;
-		if (keys & 32)
-			position.y -= movespeed * dt;
-		if (checkColllision(nextPosition, dirction))
-		{
-			position = nextPosition;
-		}
+
+	if (keys != 0)
+	{
+		camera->processKeyboard(keys, dt, world);
 	}
+	camera->gravity(world);
 	glutPostRedisplay();
 }
 
 static void motion(int x, int y) {
-	static bool warp = false;
-	static const float mousespeed = 0.001;
-
-	if (!warp) {
-		angle.x -= (x - ww / 2) * mousespeed;
-		angle.y -= (y - wh / 2) * mousespeed;
-
-		if (angle.x < -M_PI)
-			angle.x += M_PI * 2;
-		if (angle.x > M_PI)
-			angle.x -= M_PI * 2;
-		if (angle.y < -M_PI / 2)
-			angle.y = -M_PI / 2;
-		if (angle.y > M_PI / 2)
-			angle.y = M_PI / 2;
-
-		update_vectors();
-
-		// Force the mouse pointer back to the center of the screen.
-		// This causes another call to motion(), which we need to ignore.
-		warp = true;
-		glutWarpPointer(ww / 2, wh / 2);
-	}
-	else {
-		warp = false;
-	}
+	camera->processMouseMovement(x - ww / 2, y - wh / 2);
+	glutWarpPointer(ww / 2, wh / 2);
 }
 
 bool canSetBlock(int x, int y, int z)
 {
-	glm::vec3 camPosition = glm::floor(position);
-	if (camPosition.x == x && camPosition.y == y && camPosition.z == z)
-	{
+	if (world->get(x, y, z))
 		return false;
-	}
-	return true;
+	glm::vec3 pos = camera->getPosition();
+	if (pos.x + 0.25 <= x)
+		return true;
+	if (x + 1 <= pos.x - 0.25)
+		return true;
+	if (pos.y + 0.1 <= y)
+		return true;
+	if (y + 1 <= pos.y - 1.4)
+		return true;
+	if (pos.z + 0.25 <= z)
+		return true;
+	if (z + 1 <= pos.z - 0.25)
+		return true;
+	return false;
 }
-
 
 static void mouse(int button, int state, int x, int y) {
 	if (state != GLUT_DOWN)
@@ -405,11 +316,27 @@ static void mouse(int button, int state, int x, int y) {
 	// Scrollwheel
 	if (button == 3 || button == 4) {
 		if (button == 3)
-			buildtype--;
+		{
+			if (buildtype == 0)
+			{
+				buildtype = 43;
+			}
+			else
+			{
+				buildtype--;
+			}
+		}
 		else
-			buildtype++;
-
-		buildtype &= 0xf;
+		{
+			if (buildtype == 43)
+			{
+				buildtype = 0;
+			}
+			else
+			{
+				buildtype++;
+			}
+		}
 		fprintf(stderr, "Building blocks of type %u (%s)\n", buildtype, blocknames[buildtype]);
 		return;
 	}
@@ -439,7 +366,6 @@ static void mouse(int button, int state, int x, int y) {
 	}
 }
 
-
 void processNormalKeys(unsigned char key, int x, int y)
 {
 	switch (key) {
@@ -455,28 +381,57 @@ void processNormalKeys(unsigned char key, int x, int y)
 	case KEY_DOWN:
 		keys |= 8;
 		break;
+	case KEY_SPACE:
+		keys |= 16;
+		break;
+	case KEY_ENTER:
+		if (!enter_press)
+		{
+			keys |= 32;
+			world->set(mx, my, mz, 0);
+			enter_press = !enter_press;
+		}
+		break;
 	case KEY_ESCAPE:
 		exit(0);
 		break;
 	default:
 		break;
 	}
+	int mod = glutGetModifiers();
+	if (mod == GLUT_ACTIVE_ALT)
+	{
+		printf("sdfsdsdfs\n");
+	}
 }
 
 void processNormalUpKeys(unsigned char key, int x, int y)
 {
 	switch (key) {
-	case 97:
+	case KEY_LEFT:
 		keys &= ~1;
 		break;
-	case 100:
+	case KEY_RIGHT:
 		keys &= ~2;
 		break;
-	case 119:
+	case KEY_UP:
 		keys &= ~4;
 		break;
-	case 115:
+	case KEY_DOWN:
 		keys &= ~8;
+		break;
+	case KEY_SPACE:
+		keys &= ~16;
+		break;
+	case KEY_ENTER:
+		if (enter_press)
+		{
+			keys &= ~32;
+			enter_press = !enter_press;
+		}
+		break;
+	case KEY_TAB:
+		camera->changeType();
 		break;
 	default:
 		break;
