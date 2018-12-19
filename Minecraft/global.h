@@ -10,7 +10,7 @@
 #define CY 32
 #define CZ 16
 #define SCX 32
-#define SCY 2
+#define SCY 4
 #define SCZ 32
 #define CHUNKSLOTS (SCX * SCY * SCZ)
 #define SEALEVEL 4
@@ -27,18 +27,24 @@
 
 static GLuint program;
 static GLuint hud;
+static GLuint skybox;
 static GLint attribute_coord;
 static GLint attribute_type;
 static GLint uniform_mvp;
-static GLuint texture_id;
+static GLuint block_texture_id;
+static GLuint sky_texture_id;
 static GLint uniform_texture;
 static GLuint cursor_vbo;
+static GLuint skybox_vao;
+static GLuint skybox_vbo;
 
 static int ww, wh;
 static int mx, my, mz;
 static int face;
 static uint8_t buildtype = 1;
 
+
+static float cur_time;
 static time_t now;
 static unsigned int keys;
 
