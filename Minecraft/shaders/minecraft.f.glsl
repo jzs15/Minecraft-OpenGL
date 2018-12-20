@@ -2,7 +2,7 @@
 in vec4 texcoord;
 in float textype;
 uniform sampler2D texture;
-
+uniform float timeValue;
 const vec4 fogcolor = vec4(0.6, 0.8, 1.0, 1.0);
 const float fogdensity = .00003;
 
@@ -39,6 +39,8 @@ void main(void) {
 		return;
 	}
 	
+	vec3 lightColor =  vec3(1 - abs(timeValue) * 0.7);
+	
 	vec2 coord2d;
 	float intensity;
 	float v = int(texW / 8.0);
@@ -60,7 +62,7 @@ void main(void) {
 		discard;
 
 	// Attenuate sides of blocks
-	color.xyz *= intensity;
+	color.xyz *= intensity * lightColor;
 
 	// Calculate strength of fog
 	float z = gl_FragCoord.z / gl_FragCoord.w;

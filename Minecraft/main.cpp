@@ -118,7 +118,7 @@ static int init_resources() {
 	if (program == 0 || hud == 0 || skybox == 0)
 		return 0;
 
-	cur_time = -1.0;
+	cur_time = -0.3;
 	init_skybox();
 	/* Create and upload the texture */
 	Texture blocks("resources/textures/blocks.png");
@@ -224,10 +224,6 @@ static void display() {
 	}
 	glm::mat4 sky_mvp = projection * glm::mat4(glm::mat3(view));
 	glm::mat4 mvp = projection * view;
-	cur_time += 0.001;
-
-	if (cur_time >= 1.0)
-		cur_time = -1.0;
 
 	glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 
@@ -250,6 +246,7 @@ static void display() {
 	glDepthFunc(GL_LESS);
 
 
+	glUniform1f(glGetUniformLocation(program, "timeValue"), cur_time);
 	/* Then draw chunks */
 	cur_program = program;
 	world->render(mvp);
@@ -399,9 +396,11 @@ static void idle() {
 	static int pt = 0;
 	now = time(0);
 	int t = glutGet(GLUT_ELAPSED_TIME);
-	float dt = (t - pt) * 1.0e-3;
+	float gap = t - pt;
+	float dt = gap * 1.0e-3;
 	pt = t;
-
+	cur_time += 2.0 * gap / ONE_DAY;
+	cur_time = cur_time >= 1.0 ? glm::fract(cur_time) - 1 : cur_time;
 
 	if (keys != 0)
 	{

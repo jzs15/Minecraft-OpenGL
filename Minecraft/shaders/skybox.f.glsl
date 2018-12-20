@@ -3,8 +3,7 @@ out vec4 FragColor;
 
 in vec3 TexCoords;
 in float TexType;
-in float TimeValue;
-
+uniform float timeValue;
 uniform samplerCube skybox;
 
 bool checkType(int v)
@@ -17,21 +16,21 @@ void main()
 {
 	vec3 TexCoords3d = TexCoords;
 	if(checkType(1))
-		TexCoords3d = vec3(-TimeValue, TexCoords.y * 0.5, TexCoords.z);
+		TexCoords3d = vec3(-timeValue, TexCoords.y * 0.5, TexCoords.z);
 	else if(checkType(2))
-		TexCoords3d = vec3(TexCoords.x, TexCoords.y * 0.5, TimeValue);
+		TexCoords3d = vec3(TexCoords.x, TexCoords.y * 0.5, timeValue);
 	else if(checkType(3))
-		TexCoords3d = vec3(TexCoords.x, TexCoords.y * 0.5, -TimeValue);
+		TexCoords3d = vec3(TexCoords.x, TexCoords.y * 0.5, -timeValue);
 	else if(checkType(4))
-		TexCoords3d = vec3(TimeValue, TexCoords.y * 0.5, TexCoords.z);
+		TexCoords3d = vec3(timeValue, TexCoords.y * 0.5, TexCoords.z);
 	else if(checkType(5)) // 1
-		TexCoords3d = vec3(TimeValue, TexCoords.y,  - TexCoords.z * 0.5 - 1);
+		TexCoords3d = vec3(timeValue, TexCoords.y,  - TexCoords.z * 0.5 - 1);
 	else if(checkType(6)) // 3
-		TexCoords3d = vec3(TimeValue, TexCoords.y,  TexCoords.x * 0.5 - 1);
+		TexCoords3d = vec3(timeValue, TexCoords.y,  TexCoords.x * 0.5 - 1);
 	else if(checkType(7)) // 4
-		TexCoords3d = vec3(TimeValue, TexCoords.y,  TexCoords.z * 0.5 - 1);
+		TexCoords3d = vec3(timeValue, TexCoords.y,  TexCoords.z * 0.5 - 1);
 	else if(checkType(8)) // 2
-		TexCoords3d = vec3(TimeValue, TexCoords.y,  - TexCoords.x * 0.5 - 1);
+		TexCoords3d = vec3(timeValue, TexCoords.y,  - TexCoords.x * 0.5 - 1);
 
     FragColor = texture(skybox, TexCoords3d);
 	//FragColor = texture(skybox, TexCoords);;
