@@ -8,9 +8,9 @@
 #include "shader_utils.h"
 #include "camera.h"
 
-
 static World *world;
 static Camera *camera;
+bool is_zoom = false;
 GLuint cur_program;
 
 static void init_skybox()
@@ -209,7 +209,19 @@ static void drawHud() {
 
 static void display() {
 	glm::mat4 view = camera->getViewMatrix();
-	glm::mat4 projection = glm::perspective(45.0f, 1.0f*ww / wh, 0.01f, 1000.0f);
+	glm::mat4 projection;
+	if (is_ortho && !is_zoom)
+	{
+		projection = glm::ortho(0.0f, 200.0f, -100.0f, 200.0f, -1000.0f, 1000.0f);
+	}
+	else if (!is_ortho && is_zoom)
+	{
+		projection = glm::perspective(glm::radians(10.0f), 1.0f*ww / wh, 0.01f, 1000.0f);
+	}
+	else
+	{
+		projection = glm::perspective(glm::radians(45.0f), 1.0f*ww / wh, 0.01f, 1000.0f);
+	}
 	glm::mat4 sky_mvp = projection * glm::mat4(glm::mat3(view));
 	glm::mat4 mvp = projection * view;
 	cur_time += 0.001;
@@ -342,17 +354,45 @@ static void display() {
 	glutSwapBuffers();
 }
 
-bool checkColllision(glm::vec3 nextPosition, glm::vec3 direction)
-{
-	float camSize = 0.5f;
-	direction = glm::normalize(direction);
-	glm::vec3 camPosition = glm::floor(nextPosition + direction * camSize);
-	if (world->get(camPosition.x, camPosition.y, camPosition.z))
-	{
-		printf("Collision: %d %d %d\n", camPosition.x, camPosition.y, camPosition.z);
-		return false;
+static void special(int key, int x, int y) {
+	switch (key) {
+	case GLUT_KEY_LEFT:
+		keys |= 64;
+		break;
+	case GLUT_KEY_RIGHT:
+		keys |= 128;
+		break;
+	case GLUT_KEY_UP:
+		keys |= 256;
+		break;
+	case GLUT_KEY_DOWN:
+		keys |= 512;
+		break;
+	case GLUT_KEY_F1:
+		select_using_depthbuffer = !select_using_depthbuffer;
+		if (select_using_depthbuffer)
+			printf("Using depth buffer selection method\n");
+		else
+			printf("Using ray casting selection method\n");
+		break;
 	}
-	return true;
+}
+
+static void specialup(int key, int x, int y) {
+	switch (key) {
+	case GLUT_KEY_LEFT:
+		keys &= ~64;
+		break;
+	case GLUT_KEY_RIGHT:
+		keys &= ~128;
+		break;
+	case GLUT_KEY_UP:
+		keys &= ~256;
+		break;
+	case GLUT_KEY_DOWN:
+		keys &= ~512;
+		break;
+	}
 }
 
 static void idle() {
@@ -395,7 +435,6 @@ bool canSetBlock(int x, int y, int z)
 		return true;
 	return false;
 }
-
 
 static void mouse(int button, int state, int x, int y) {
 	if (state != GLUT_DOWN)
@@ -454,9 +493,9 @@ static void mouse(int button, int state, int x, int y) {
 	}
 }
 
-
 void processNormalKeys(unsigned char key, int x, int y)
 {
+	
 	switch (key) {
 	case KEY_LEFT:
 		keys |= 1;
@@ -473,11 +512,36 @@ void processNormalKeys(unsigned char key, int x, int y)
 	case KEY_SPACE:
 		keys |= 16;
 		break;
+	case KEY_ZOOM:
+		//keys |= 32;
+		if (!is_zoom)
+		{
+			is_zoom = !is_zoom;
+		}
+		break;
+	case KEY_F:
+		if (!is_ortho)
+		{
+			is_ortho = !is_ortho;
+		}
+		break;
+	case KEY_ENTER:
+		if (!enter_press)
+		{
+			world->set(mx, my, mz, 0);
+			enter_press = !enter_press;
+		}
+		break;
 	case KEY_ESCAPE:
 		exit(0);
 		break;
 	default:
 		break;
+	}
+	int mod = glutGetModifiers();
+	if (mod == GLUT_ACTIVE_ALT)
+	{
+		printf("sdfsdsdfs\n");
 	}
 }
 
@@ -498,6 +562,25 @@ void processNormalUpKeys(unsigned char key, int x, int y)
 		break;
 	case KEY_SPACE:
 		keys &= ~16;
+		break;
+	case KEY_ZOOM:
+		//keys &= ~32;
+		if (is_zoom)
+		{
+			is_zoom = !is_zoom;
+		}
+		break;
+	case KEY_F:
+		if (is_ortho)
+		{
+			is_ortho = !is_ortho;
+		}
+		break;
+	case KEY_ENTER:
+		if (enter_press)
+		{
+			enter_press = !enter_press;
+		}
 		break;
 	case KEY_TAB:
 		camera->changeType();

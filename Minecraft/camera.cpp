@@ -73,7 +73,36 @@ void Camera::processKeyboard(unsigned int keys, float deltaTime, World *world)
 			direction += WORLD_UP;
 		}
 	}
+	if ((keys & 64))
+	{
+		yaw -= K_MOUSE_VELOCITY;
+		updateCameraVectors();
+	}
+	if ((keys & 128))
+	{
+		yaw += K_MOUSE_VELOCITY;
+		updateCameraVectors();
+	}
+	if ((keys & 256))
+	{
+		pitch += K_MOUSE_VELOCITY;
 
+		if (pitch > 89.0f)
+			pitch = 89.0f;
+		if (pitch < -89.0f)
+			pitch = -89.0f;
+		updateCameraVectors();
+	}
+	if ((keys & 512))
+	{
+		pitch -= K_MOUSE_VELOCITY;
+
+		if (pitch > 89.0f)
+			pitch = 89.0f;
+		if (pitch < -89.0f)
+			pitch = -89.0f;
+		updateCameraVectors();
+	}
 	if (glm::length(direction) > 0.5)
 	{
 		direction = glm::normalize(direction) * velocity;
