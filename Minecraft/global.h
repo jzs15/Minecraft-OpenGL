@@ -37,13 +37,6 @@ static GLuint texture_id;
 static GLint uniform_texture;
 static GLuint cursor_vbo;
 
-static glm::vec3 lightPos;
-
-static unsigned int SHADOW_WIDTH, SHADOW_HEIGHT;
-static unsigned int depthMapFBO;
-static unsigned int depthCubemap;
-static bool shadows;
-
 static int ww, wh;
 static int mx, my, mz;
 static int face;
@@ -54,7 +47,7 @@ static unsigned int keys;
 static bool select_using_depthbuffer = false;
 static bool enter_press = false;
 static bool is_ortho = false;
-static bool is_zoom = false;
+extern bool is_zoom;
 
 static const char *blocknames[44] = {
 	"Air", "Stone", "Grass Block", "Dirt", "Cobblestone", "Planks", "Sand", "Glass",

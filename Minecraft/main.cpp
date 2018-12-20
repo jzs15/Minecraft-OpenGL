@@ -10,6 +10,7 @@
 
 static World *world;
 static Camera *camera;
+bool is_zoom = false;
 
 static int init_resources() {
 	/* Create shaders */
@@ -121,7 +122,7 @@ static void display() {
 	}
 	else if (!is_ortho && is_zoom)
 	{
-		projection = glm::perspective(glm::radians(20.0f), 1.0f*ww / wh, 0.01f, 1000.0f);
+		projection = glm::perspective(glm::radians(10.0f), 1.0f*ww / wh, 0.01f, 1000.0f);
 	}
 	else
 	{
