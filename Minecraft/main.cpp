@@ -230,8 +230,7 @@ static void display() {
 	glBufferData(GL_ARRAY_BUFFER, sizeof box, box, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glDrawArrays(GL_LINES, 0, 24);
-
-
+	
 	drawHud();
 	/* And we are done */
 

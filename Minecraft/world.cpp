@@ -1,5 +1,5 @@
 #include "world.h"
-#include <iostream>
+
 World::World() {
 	seed = time(NULL);
 	for (int x = 0; x < SCX; x++)
@@ -88,8 +88,6 @@ void World::render(const glm::mat4 &pv) {
 					continue;
 
 				// If it is outside the screen, don't bother drawing it
-				
-				//std::cout << "is_zoom = " << is_zoom << std::endl;
 				if (!is_zoom && (fabsf(center.x) > 1 + fabsf(CY * 2 / center.w) || fabsf(center.y) > 1 + fabsf(CY * 2 / center.w)))
 				{
 					continue;
