@@ -406,7 +406,7 @@ static void idle() {
 	{
 		camera->processKeyboard(keys, dt, world);
 	}
-	camera->gravity(world);
+	camera->gravity(dt, world);
 	glutPostRedisplay();
 }
 

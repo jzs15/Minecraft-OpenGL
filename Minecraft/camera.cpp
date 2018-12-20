@@ -64,7 +64,7 @@ void Camera::processKeyboard(unsigned int keys, float deltaTime, World *world)
 	{
 		if (isWalking && !isFalling && !isJumping)
 		{
-			gravitySpeed = 0.15f;
+			gravitySpeed = 0.12f;
 			isFalling = true;
 			isJumping = true;
 		}
@@ -142,7 +142,7 @@ glm::vec3 Camera::getRight()
 	return right;
 }
 
-void Camera::gravity(World *world)
+void Camera::gravity(float deltaTime, World *world)
 {
 	if (!isWalking)
 	{
@@ -194,7 +194,7 @@ void Camera::gravity(World *world)
 		if (isFalling)
 		{
 			position = nextPosition;
-			gravitySpeed -= 0.008f;
+			gravitySpeed -= 0.4f * deltaTime;
 		}
 	}
 }
