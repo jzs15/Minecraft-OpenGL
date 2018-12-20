@@ -21,6 +21,9 @@
     <ClCompile Include="chunk.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="world.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -31,9 +34,6 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="camera.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="world.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,6 +47,9 @@
     <ClInclude Include="global.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="world.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="texture.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -54,12 +57,6 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="camera.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="shader.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="world.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

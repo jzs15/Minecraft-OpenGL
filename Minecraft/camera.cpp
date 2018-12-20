@@ -103,7 +103,6 @@ void Camera::processKeyboard(unsigned int keys, float deltaTime, World *world)
 			pitch = -89.0f;
 		updateCameraVectors();
 	}
-
 	if (glm::length(direction) > 0.5)
 	{
 		direction = glm::normalize(direction) * velocity;
@@ -152,7 +151,7 @@ void Camera::gravity(World *world)
 	if (!isFalling)
 	{
 		glm::vec3 floorPosition = glm::floor(position - glm::vec3(0.0f, 1.4f, 0.0f));
-		if (!world->get(floorPosition.x, floorPosition.y, floorPosition.z))
+		if (!world->isBlock(floorPosition.x, floorPosition.y, floorPosition.z))
 		{
 			isFalling = true;
 		}
@@ -168,7 +167,7 @@ void Camera::gravity(World *world)
 		glm::vec3 floorPosition = glm::floor(position);
 		if (gravitySpeed > 0.0f)
 		{
-			if (world->get(floorPosition.x, floorPosition.y + 1, floorPosition.z)
+			if (world->isBlock(floorPosition.x, floorPosition.y + 1, floorPosition.z)
 				&& (floorPosition.y + 1 - nextPosition.y) < 0.1)
 			{
 				position.y = floorPosition.y + 1 - 0.1;
@@ -181,7 +180,7 @@ void Camera::gravity(World *world)
 			int min_block = nextPosition.y - floorNextPosition.y > 0.4 ? 1 : 2;
 			for (int y = floorPosition.y - 1; y >= floorNextPosition.y - min_block; y--)
 			{
-				if (world->get(floorPosition.x, y, floorPosition.z))
+				if (world->isBlock(floorPosition.x, y, floorPosition.z))
 				{
 					position.y = (float)y + 2.4f;
 					isFalling = false;
@@ -211,38 +210,38 @@ void Camera::setNextPosition(glm::vec3 direction, World *world)
 	glm::vec3 newPosition = position + direction;
 	glm::vec3 floorPosition = glm::floor(position);
 	glm::vec3 floorNewPosition = glm::floor(newPosition);
-	if (direction.x >= 0 && (world->get(floorPosition.x + 1, floorPosition.y, floorPosition.z)
-		|| world->get(floorPosition.x + 1, floorPosition.y - 1, floorPosition.z))
+	if (direction.x >= 0 && (world->isBlock(floorPosition.x + 1, floorPosition.y, floorPosition.z)
+		|| world->isBlock(floorPosition.x + 1, floorPosition.y - 1, floorPosition.z))
 		&& (floorPosition.x + 1 - newPosition.x) < 0.25)
 	{
 		newPosition.x = floorPosition.x + 1 - 0.25;
 	}
-	else if (direction.x < 0 && (world->get(floorPosition.x - 1, floorPosition.y, floorPosition.z)
-		|| world->get(floorPosition.x - 1, floorPosition.y - 1, floorPosition.z))
+	else if (direction.x < 0 && (world->isBlock(floorPosition.x - 1, floorPosition.y, floorPosition.z) 
+		|| world->isBlock(floorPosition.x - 1, floorPosition.y - 1, floorPosition.z))
 		&& (newPosition.x - floorPosition.x) < 0.25)
 	{
 		newPosition.x = floorPosition.x + 0.25;
 	}
 
-	if (direction.y >= 0 && world->get(floorPosition.x, floorPosition.y + 1, floorPosition.z)
+	if (direction.y >= 0 && world->isBlock(floorPosition.x, floorPosition.y + 1, floorPosition.z)
 		&& (floorPosition.y + 1 - newPosition.y) < 0.1)
 	{
 		newPosition.y = floorPosition.y + 1 - 0.1;
 	}
-	else if (direction.y < 0 && world->get(floorPosition.x, floorPosition.y - 2, floorPosition.z)
+	else if (direction.y < 0 && world->isBlock(floorPosition.x, floorPosition.y - 2, floorPosition.z)
 		&& (newPosition.y - floorPosition.y) < 0.4)
 	{
 		newPosition.y = floorPosition.y + 0.4;
 	}
 
-	if (direction.z >= 0 && (world->get(floorPosition.x, floorPosition.y, floorPosition.z + 1)
-		|| world->get(floorPosition.x, floorPosition.y - 1, floorPosition.z + 1))
+	if (direction.z >= 0 && (world->isBlock(floorPosition.x, floorPosition.y, floorPosition.z + 1)
+		|| world->isBlock(floorPosition.x, floorPosition.y - 1, floorPosition.z + 1))
 		&& (floorPosition.z + 1 - newPosition.z) < 0.25)
 	{
 		newPosition.z = floorPosition.z + 1 - 0.25;
 	}
-	else if (direction.z < 0 && (world->get(floorPosition.x, floorPosition.y, floorPosition.z - 1)
-		|| world->get(floorPosition.x, floorPosition.y - 1, floorPosition.z - 1))
+	else if (direction.z < 0 && (world->isBlock(floorPosition.x, floorPosition.y, floorPosition.z - 1)
+		|| world->isBlock(floorPosition.x, floorPosition.y - 1, floorPosition.z - 1))
 		&& (newPosition.z - floorPosition.z) < 0.25)
 	{
 		newPosition.z = floorPosition.z + 0.25;

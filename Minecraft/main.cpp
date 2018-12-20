@@ -11,28 +11,121 @@
 static World *world;
 static Camera *camera;
 bool is_zoom = false;
+GLuint cur_program;
 
+static void init_skybox()
+{
+	float skyboxVertices[] = {
+		// positions          
+		-1.0f,  1.0f, -1.0f, 1.0f,
+		-1.0f, -1.0f, -1.0f, 1.0f,
+		 1.0f, -1.0f, -1.0f, 1.0f,
+		 1.0f, -1.0f, -1.0f, 1.0f,
+		 1.0f,  1.0f, -1.0f, 1.0f,
+		-1.0f,  1.0f, -1.0f, 1.0f,
+
+		-1.0f, -1.0f,  1.0f, 2.0f,
+		-1.0f, -1.0f, -1.0f, 2.0f,
+		-1.0f,  1.0f, -1.0f, 2.0f,
+		-1.0f,  1.0f, -1.0f, 2.0f,
+		-1.0f,  1.0f,  1.0f, 2.0f,
+		-1.0f, -1.0f,  1.0f, 2.0f,
+
+		 1.0f, -1.0f, -1.0f, 3.0f,
+		 1.0f, -1.0f,  1.0f, 3.0f,
+		 1.0f,  1.0f,  1.0f, 3.0f,
+		 1.0f,  1.0f,  1.0f, 3.0f,
+		 1.0f,  1.0f, -1.0f, 3.0f,
+		 1.0f, -1.0f, -1.0f, 3.0f,
+
+		-1.0f, -1.0f,  1.0f, 4.0f,
+		-1.0f,  1.0f,  1.0f, 4.0f,
+		 1.0f,  1.0f,  1.0f, 4.0f,
+		 1.0f,  1.0f,  1.0f, 4.0f,
+		 1.0f, -1.0f,  1.0f, 4.0f,
+		-1.0f, -1.0f,  1.0f, 4.0f,
+
+		-1.0f,  1.0f, -1.0f, 5.0f,
+		 1.0f,  1.0f, -1.0f, 5.0f,
+		 0.0f,  1.0f,  0.0f, 5.0f,
+
+		 0.0f,  1.0f,  0.0f, 6.0f,
+		 1.0f,  1.0f, -1.0f, 6.0f,
+		 1.0f,  1.0f,  1.0f, 6.0f,
+
+		 1.0f,  1.0f,  1.0f, 7.0f,
+		 0.0f,  1.0f,  0.0f, 7.0f,
+		-1.0f,  1.0f,  1.0f, 7.0f,
+
+		-1.0f,  1.0f, -1.0f, 8.0f,
+		 0.0f,  1.0f,  0.0f, 8.0f,
+		-1.0f,  1.0f,  1.0f, 8.0f,
+
+		-1.0f,  -1.0f, -1.0f, 5.0f,
+		 1.0f,  -1.0f, -1.0f, 5.0f,
+		 0.0f,  -1.0f,  0.0f, 5.0f,
+
+		 0.0f, -1.0f,  0.0f, 6.0f,
+		 1.0f, -1.0f, -1.0f, 6.0f,
+		 1.0f, -1.0f,  1.0f, 6.0f,
+
+		 1.0f, -1.0f,  1.0f, 7.0f,
+		 0.0f, -1.0f,  0.0f, 7.0f,
+		-1.0f, -1.0f,  1.0f, 7.0f,
+
+		-1.0f, -1.0f, -1.0f, 8.0f,
+		 0.0f, -1.0f,  0.0f, 8.0f,
+		-1.0f, -1.0f,  1.0f, 8.0f,
+	}; 
+	glGenVertexArrays(1, &skybox_vao);
+	glGenBuffers(1, &skybox_vbo);
+	glBindVertexArray(skybox_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(3 * sizeof(float)));
+
+	
+	glGenTextures(1, &sky_texture_id);
+	glBindTexture(GL_TEXTURE_2D, sky_texture_id);
+	Texture skyTexture("resources/textures/sky.png");
+	for (int i = 0; i < 6; i++)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, skyTexture.getWidth(), skyTexture.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, skyTexture.getData());
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	
+
+	glUseProgram(skybox);
+	GLuint temp_d = glGetUniformLocation(skybox, "skybox");
+	glUniform1i(glGetUniformLocation(skybox, "skybox"), 0);
+
+
+}
 static int init_resources() {
 	/* Create shaders */
 
-	program = create_program("shaders/minecraft.v.glsl", "shaders/minecraft.f.glsl", NULL);
-	hud = create_program("shaders/hud.v.glsl", "shaders/hud.f.glsl", NULL);
+	program = create_program("shaders/minecraft.v.glsl", "shaders/minecraft.f.glsl");
+	hud = create_program("shaders/hud.v.glsl", "shaders/hud.f.glsl");
+	skybox = create_program("shaders/skybox.v.glsl", "shaders/skybox.f.glsl");
 
-	if (program == 0 || hud == 0)
+	if (program == 0 || hud == 0 || skybox == 0)
 		return 0;
 
-	attribute_coord = get_attrib(program, "coord");
-	uniform_mvp = get_uniform(program, "mvp");
-
-	if (attribute_coord == -1 || uniform_mvp == -1)
-		return 0;
-
+	cur_time = -1.0;
+	init_skybox();
 	/* Create and upload the texture */
 	Texture blocks("resources/textures/blocks.png");
 
 	glActiveTexture(GL_TEXTURE0);
-	glGenTextures(1, &texture_id);
-	glBindTexture(GL_TEXTURE_2D, texture_id);
+	glGenTextures(1, &block_texture_id);
+	glBindTexture(GL_TEXTURE_2D, block_texture_id);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, blocks.getWidth(), blocks.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, blocks.getData());
 	glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -50,6 +143,7 @@ static int init_resources() {
 	glUseProgram(program);
 	glUniform1i(uniform_texture, 0);
 	glClearColor(0.6, 0.8, 1.0, 0.0);
+	//glClearColor(0.0, 0.0, 0.0, 0.0);
 	glEnable(GL_CULL_FACE);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // Use GL_NEAREST_MIPMAP_LINEAR if you want to use mipmaps
@@ -57,7 +151,7 @@ static int init_resources() {
 
 	glPolygonOffset(1, 1);
 
-	glEnableVertexAttribArray(attribute_coord);
+	glEnableVertexAttribArray(glGetAttribLocation(program, "coord"));
 
 	return 1;
 }
@@ -90,7 +184,7 @@ static void drawHud() {
 		{0, cross_height, 0, 2},
 	};
 	glBufferData(GL_ARRAY_BUFFER, sizeof cross, cross, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(glGetAttribLocation(hud, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glDrawArrays(GL_LINES, 0, 4);
 
 	float hudWidth = 150.0f / ww;
@@ -107,7 +201,7 @@ static void drawHud() {
 		{hudWidth - widthGap, -heightGap, u + textureGap, v + textureGap},
 	};
 	glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(glGetAttribLocation(hud, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glDrawArrays(GL_QUADS, 0, 4);
 	glEnable(GL_DEPTH_TEST);
 	glUseProgram(program);
@@ -128,16 +222,36 @@ static void display() {
 	{
 		projection = glm::perspective(glm::radians(45.0f), 1.0f*ww / wh, 0.01f, 1000.0f);
 	}
+	glm::mat4 sky_mvp = projection * glm::mat4(glm::mat3(view));
 	glm::mat4 mvp = projection * view;
+	cur_time += 0.001;
 
-	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
+	if (cur_time >= 1.0)
+		cur_time = -1.0;
+
+	glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_POLYGON_OFFSET_FILL);
 
-	/* Then draw chunks */
+	glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+	glUseProgram(skybox);
+	glUniform1f(glGetUniformLocation(skybox, "timeValue"), cur_time);
+	glUniformMatrix4fv(glGetUniformLocation(skybox, "mvp"), 1, GL_FALSE, glm::value_ptr(sky_mvp));
+	// skybox cube
+	glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
+	glBindVertexArray(skybox_vao);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, sky_texture_id);
+	glDrawArrays(GL_TRIANGLES, 0, 48);
+	glBindVertexArray(0);
+	glUseProgram(program);
+	glDepthFunc(GL_LESS);
 
+
+	/* Then draw chunks */
+	cur_program = program;
 	world->render(mvp);
 
 	/* At which voxel are we looking? */
@@ -193,44 +307,47 @@ static void display() {
 	float bz = mz;
 
 	/* Render a box around the block we are pointing at */
+	float box[24][5] = {
+		{bx + 0, by + 0, bz + 0, 63, 0},
+		{bx + 1, by + 0, bz + 0, 63, 0},
+		{bx + 0, by + 1, bz + 0, 63, 0},
+		{bx + 1, by + 1, bz + 0, 63, 0},
+		{bx + 0, by + 0, bz + 1, 63, 0},
+		{bx + 1, by + 0, bz + 1, 63, 0},
+		{bx + 0, by + 1, bz + 1, 63, 0},
+		{bx + 1, by + 1, bz + 1, 63, 0},
 
-	float box[24][4] = {
-		{bx + 0, by + 0, bz + 0, 63},
-		{bx + 1, by + 0, bz + 0, 63},
-		{bx + 0, by + 1, bz + 0, 63},
-		{bx + 1, by + 1, bz + 0, 63},
-		{bx + 0, by + 0, bz + 1, 63},
-		{bx + 1, by + 0, bz + 1, 63},
-		{bx + 0, by + 1, bz + 1, 63},
-		{bx + 1, by + 1, bz + 1, 63},
+		{bx + 0, by + 0, bz + 0, 63, 0},
+		{bx + 0, by + 1, bz + 0, 63, 0},
+		{bx + 1, by + 0, bz + 0, 63, 0},
+		{bx + 1, by + 1, bz + 0, 63, 0},
+		{bx + 0, by + 0, bz + 1, 63, 0},
+		{bx + 0, by + 1, bz + 1, 63, 0},
+		{bx + 1, by + 0, bz + 1, 63, 0},
+		{bx + 1, by + 1, bz + 1, 63, 0},
 
-		{bx + 0, by + 0, bz + 0, 63},
-		{bx + 0, by + 1, bz + 0, 63},
-		{bx + 1, by + 0, bz + 0, 63},
-		{bx + 1, by + 1, bz + 0, 63},
-		{bx + 0, by + 0, bz + 1, 63},
-		{bx + 0, by + 1, bz + 1, 63},
-		{bx + 1, by + 0, bz + 1, 63},
-		{bx + 1, by + 1, bz + 1, 63},
-
-		{bx + 0, by + 0, bz + 0, 63},
-		{bx + 0, by + 0, bz + 1, 63},
-		{bx + 1, by + 0, bz + 0, 63},
-		{bx + 1, by + 0, bz + 1, 63},
-		{bx + 0, by + 1, bz + 0, 63},
-		{bx + 0, by + 1, bz + 1, 63},
-		{bx + 1, by + 1, bz + 0, 63},
-		{bx + 1, by + 1, bz + 1, 63},
+		{bx + 0, by + 0, bz + 0, 63, 0},
+		{bx + 0, by + 0, bz + 1, 63, 0},
+		{bx + 1, by + 0, bz + 0, 63, 0},
+		{bx + 1, by + 0, bz + 1, 63, 0},
+		{bx + 0, by + 1, bz + 0, 63, 0},
+		{bx + 0, by + 1, bz + 1, 63, 0},
+		{bx + 1, by + 1, bz + 0, 63, 0},
+		{bx + 1, by + 1, bz + 1, 63, 0},
 	};
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
 	glDisable(GL_CULL_FACE);
-	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
+	glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 	glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof box, box, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(glGetAttribLocation(program, "coord"), 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 1, GL_BYTE, GL_FALSE, 5 * sizeof(float), (void*)(4 * sizeof(float)));
+	glEnableVertexAttribArray(glGetAttribLocation(program, "coord"));
 	glDrawArrays(GL_LINES, 0, 24);
-	
+
+
 	drawHud();
 	/* And we are done */
 
@@ -301,7 +418,7 @@ static void motion(int x, int y) {
 
 bool canSetBlock(int x, int y, int z)
 {
-	if (world->get(x, y, z))
+	if (!world->canSetBlock(x, y, z, buildtype))
 		return false;
 	glm::vec3 pos = camera->getPosition();
 	if (pos.x + 0.25 <= x)
@@ -510,8 +627,6 @@ int main(int argc, char* argv[]) {
 		glutIdleFunc(display);
 		glutKeyboardFunc(processNormalKeys);
 		glutKeyboardUpFunc(processNormalUpKeys);
-		glutSpecialFunc(special);
-		glutSpecialUpFunc(specialup);
 		glutIdleFunc(idle);
 		glutPassiveMotionFunc(motion);
 		glutMotionFunc(motion);

@@ -10,7 +10,7 @@
 #define CY 32
 #define CZ 16
 #define SCX 32
-#define SCY 2
+#define SCY 4
 #define SCZ 32
 #define CHUNKSLOTS (SCX * SCY * SCZ)
 #define SEALEVEL 4
@@ -27,21 +27,24 @@
 #define KEY_F 102
 #define KEY_ZOOM 122
 
-static GLuint light_shader;
-static GLuint simpleDepthShader;
+extern GLuint cur_program;
 static GLuint program;
 static GLuint hud;
-static GLint attribute_coord;
-static GLint uniform_mvp;
-static GLuint texture_id;
+static GLuint skybox;
+static GLuint block_texture_id;
+static GLuint sky_texture_id;
 static GLint uniform_texture;
 static GLuint cursor_vbo;
+static GLuint skybox_vao;
+static GLuint skybox_vbo;
 
 static int ww, wh;
 static int mx, my, mz;
 static int face;
 static uint8_t buildtype = 1;
 
+
+static float cur_time;
 static time_t now;
 static unsigned int keys;
 static bool select_using_depthbuffer = false;
@@ -50,10 +53,10 @@ static bool is_ortho = false;
 extern bool is_zoom;
 
 static const char *blocknames[44] = {
-	"Air", "Stone", "Grass Block", "Dirt", "Cobblestone", "Planks", "Sand", "Glass",
+	"Air", "Stone", "Grass Block", "Dirt", "Cobblestone", "Planks", "Sand", "Glass", 
 	"Bricks", "Water", "Coal Ore", "Iron Ore", "Gold Ore", "Diamond Ore", "Emetald Ore", "Redstone Ore",
 	"Lapis Ore", "Coal Block", "Iron Block", "Gold Block", "Diamond Block", "Emetald Block", "Redstone Block", "Lapis Block",
 	"Oak Leaves", "Oak Log", "Jungle Leaves", "Jungle Log", "TNT", "White Block", "Yellow Block","Green Block",
-	"Blue Block", "Red Block", "Black Block", "Dandelion", "Daisy", "Orange Tulip", "Pink Tulip", "Poppy",
+	"Blue Block", "Red Block", "Black Block", "Dandelion", "Daisy", "Orange Tulip", "Pink Tulip", "Poppy", 
 	"Brown Mushroom", "Red Mushroom", "Grass", "Torch"
 };
