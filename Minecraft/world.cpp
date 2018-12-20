@@ -105,8 +105,10 @@ void World::render(const glm::mat4 &pv) {
 					continue;
 
 				// If it is outside the screen, don't bother drawing it
-				if (fabsf(center.x) > 1 + fabsf(CY * 2 / center.w) || fabsf(center.y) > 1 + fabsf(CY * 2 / center.w))
+				if (!is_zoom && (fabsf(center.x) > 1 + fabsf(CY * 2 / center.w) || fabsf(center.y) > 1 + fabsf(CY * 2 / center.w)))
+				{
 					continue;
+				}
 
 				// If this chunk is not initialized, skip it
 				if (!c[x][y][z]->initialized) {

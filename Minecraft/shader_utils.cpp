@@ -103,6 +103,13 @@ GLuint create_program(const char *vertexfile, const char *fragmentfile, const ch
 		glAttachShader(program, shader);
 	}
 
+	if (geometryfile) {
+		shader = create_shader(geometryfile, GL_GEOMETRY_SHADER);
+		if (!shader)
+			return 0;
+		glAttachShader(program, shader);
+	}
+
 	glLinkProgram(program);
 	GLint link_ok = GL_FALSE;
 	glGetProgramiv(program, GL_LINK_STATUS, &link_ok);

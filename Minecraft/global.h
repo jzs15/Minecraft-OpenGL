@@ -22,7 +22,10 @@
 #define KEY_RIGHT 100
 #define KEY_ESCAPE 27
 #define KEY_SPACE 32
+#define KEY_ENTER 13
 #define KEY_TAB 9
+#define KEY_F 102
+#define KEY_ZOOM 122
 
 extern GLuint cur_program;
 static GLuint program;
@@ -44,6 +47,10 @@ static uint8_t buildtype = 1;
 static float cur_time;
 static time_t now;
 static unsigned int keys;
+static bool select_using_depthbuffer = false;
+static bool enter_press = false;
+static bool is_ortho = false;
+extern bool is_zoom;
 
 static const char *blocknames[44] = {
 	"Air", "Stone", "Grass Block", "Dirt", "Cobblestone", "Planks", "Sand", "Glass", 
