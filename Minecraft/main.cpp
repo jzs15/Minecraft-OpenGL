@@ -8,7 +8,6 @@
 #include "shader_utils.h"
 #include "camera.h"
 
-
 static World *world;
 static Camera *camera;
 
@@ -115,8 +114,19 @@ static void drawHud() {
 
 static void display() {
 	glm::mat4 view = camera->getViewMatrix();
-	glm::mat4 projection = glm::perspective(45.0f, 1.0f*ww / wh, 0.01f, 1000.0f);
-
+	glm::mat4 projection;
+	if (is_ortho && !is_zoom)
+	{
+		projection = glm::ortho(0.0f, 200.0f, -100.0f, 200.0f, -1000.0f, 1000.0f);
+	}
+	else if (!is_ortho && is_zoom)
+	{
+		projection = glm::perspective(glm::radians(20.0f), 1.0f*ww / wh, 0.01f, 1000.0f);
+	}
+	else
+	{
+		projection = glm::perspective(glm::radians(45.0f), 1.0f*ww / wh, 0.01f, 1000.0f);
+	}
 	glm::mat4 mvp = projection * view;
 
 	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
@@ -368,6 +378,7 @@ static void mouse(int button, int state, int x, int y) {
 
 void processNormalKeys(unsigned char key, int x, int y)
 {
+	
 	switch (key) {
 	case KEY_LEFT:
 		keys |= 1;
@@ -384,10 +395,22 @@ void processNormalKeys(unsigned char key, int x, int y)
 	case KEY_SPACE:
 		keys |= 16;
 		break;
+	case KEY_ZOOM:
+		//keys |= 32;
+		if (!is_zoom)
+		{
+			is_zoom = !is_zoom;
+		}
+		break;
+	case KEY_F:
+		if (!is_ortho)
+		{
+			is_ortho = !is_ortho;
+		}
+		break;
 	case KEY_ENTER:
 		if (!enter_press)
 		{
-			keys |= 32;
 			world->set(mx, my, mz, 0);
 			enter_press = !enter_press;
 		}
@@ -423,10 +446,22 @@ void processNormalUpKeys(unsigned char key, int x, int y)
 	case KEY_SPACE:
 		keys &= ~16;
 		break;
+	case KEY_ZOOM:
+		//keys &= ~32;
+		if (is_zoom)
+		{
+			is_zoom = !is_zoom;
+		}
+		break;
+	case KEY_F:
+		if (is_ortho)
+		{
+			is_ortho = !is_ortho;
+		}
+		break;
 	case KEY_ENTER:
 		if (enter_press)
 		{
-			keys &= ~32;
 			enter_press = !enter_press;
 		}
 		break;

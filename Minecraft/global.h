@@ -24,6 +24,8 @@
 #define KEY_SPACE 32
 #define KEY_ENTER 13
 #define KEY_TAB 9
+#define KEY_F 102
+#define KEY_ZOOM 122
 
 static GLuint light_shader;
 static GLuint simpleDepthShader;
@@ -51,6 +53,8 @@ static time_t now;
 static unsigned int keys;
 static bool select_using_depthbuffer = false;
 static bool enter_press = false;
+static bool is_ortho = false;
+static bool is_zoom = false;
 
 static const char *blocknames[44] = {
 	"Air", "Stone", "Grass Block", "Dirt", "Cobblestone", "Planks", "Sand", "Glass",
