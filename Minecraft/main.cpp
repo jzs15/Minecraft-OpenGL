@@ -11,6 +11,7 @@
 
 static World *world;
 static Camera *camera;
+GLuint cur_program;
 
 static void init_skybox()
 {
@@ -118,12 +119,6 @@ static int init_resources() {
 		return 0;
 
 	cur_time = -1.0;
-	attribute_coord = get_attrib(program, "coord");
-	uniform_mvp = get_uniform(program, "mvp");
-
-	if (attribute_coord == -1 || uniform_mvp == -1)
-		return 0;
-
 	init_skybox();
 	/* Create and upload the texture */
 	Texture blocks("resources/textures/blocks.png");
@@ -156,7 +151,7 @@ static int init_resources() {
 
 	glPolygonOffset(1, 1);
 
-	glEnableVertexAttribArray(attribute_coord);
+	glEnableVertexAttribArray(glGetAttribLocation(program, "coord"));
 
 	return 1;
 }
@@ -189,7 +184,7 @@ static void drawHud() {
 		{0, cross_height, 0, 2},
 	};
 	glBufferData(GL_ARRAY_BUFFER, sizeof cross, cross, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(glGetAttribLocation(hud, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glDrawArrays(GL_LINES, 0, 4);
 
 	float hudWidth = 150.0f / ww;
@@ -206,7 +201,7 @@ static void drawHud() {
 		{hudWidth - widthGap, -heightGap, u + textureGap, v + textureGap},
 	};
 	glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(glGetAttribLocation(hud, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glDrawArrays(GL_QUADS, 0, 4);
 	glEnable(GL_DEPTH_TEST);
 	glUseProgram(program);
@@ -217,13 +212,12 @@ static void display() {
 	glm::mat4 projection = glm::perspective(45.0f, 1.0f*ww / wh, 0.01f, 1000.0f);
 	glm::mat4 sky_mvp = projection * glm::mat4(glm::mat3(view));
 	glm::mat4 mvp = projection * view;
-	GLuint temp_mvp = get_uniform(skybox, "mvp");
 	cur_time += 0.001;
 
 	if (cur_time >= 1.0)
 		cur_time = -1.0;
 
-	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
+	glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -232,7 +226,7 @@ static void display() {
 	glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
 	glUseProgram(skybox);
 	glUniform1f(glGetUniformLocation(skybox, "timeValue"), cur_time);
-	glUniformMatrix4fv(temp_mvp, 1, GL_FALSE, glm::value_ptr(sky_mvp));
+	glUniformMatrix4fv(glGetUniformLocation(skybox, "mvp"), 1, GL_FALSE, glm::value_ptr(sky_mvp));
 	// skybox cube
 	glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
 	glBindVertexArray(skybox_vao);
@@ -245,7 +239,7 @@ static void display() {
 
 
 	/* Then draw chunks */
-
+	cur_program = program;
 	world->render(mvp);
 
 	/* At which voxel are we looking? */
@@ -332,13 +326,13 @@ static void display() {
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
 	glDisable(GL_CULL_FACE);
-	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
+	glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 	glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof box, box, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(glGetAttribLocation(program, "coord"), 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 1, GL_BYTE, GL_FALSE, 5 * sizeof(float), (void*)(4 * sizeof(float)));
-	glEnableVertexAttribArray(attribute_coord);
+	glEnableVertexAttribArray(glGetAttribLocation(program, "coord"));
 	glDrawArrays(GL_LINES, 0, 24);
 
 

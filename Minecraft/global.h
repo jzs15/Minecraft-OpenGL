@@ -24,13 +24,10 @@
 #define KEY_SPACE 32
 #define KEY_TAB 9
 
-
+extern GLuint cur_program;
 static GLuint program;
 static GLuint hud;
 static GLuint skybox;
-static GLint attribute_coord;
-static GLint attribute_type;
-static GLint uniform_mvp;
 static GLuint block_texture_id;
 static GLuint sky_texture_id;
 static GLint uniform_texture;

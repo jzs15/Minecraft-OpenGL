@@ -552,10 +552,10 @@ void Chunk::render() {
 		return;
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glEnableVertexAttribArray(attribute_coord);
-	glVertexAttribPointer(attribute_coord, 4, GL_BYTE, GL_FALSE, 5 * sizeof(uint8_t), (void*)0);
+	glEnableVertexAttribArray(glGetAttribLocation(cur_program, "coord"));
+	glVertexAttribPointer(glGetAttribLocation(cur_program, "coord"), 4, GL_BYTE, GL_FALSE, 5 * sizeof(uint8_t), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 1, GL_BYTE, GL_FALSE, 5 * sizeof(uint8_t), (void*)(4 * sizeof(uint8_t)));
-	glEnableVertexAttribArray(attribute_coord);
+	glEnableVertexAttribArray(glGetAttribLocation(cur_program, "coord"));
 	glDrawArrays(GL_TRIANGLES, 0, elements);
 }
