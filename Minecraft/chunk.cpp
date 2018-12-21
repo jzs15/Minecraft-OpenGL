@@ -46,8 +46,11 @@ bool Chunk::isblocked(int x1, int y1, int z1, int x2, int y2, int z2) {
 	if (!blk[x1][y1][z1])
 		return true;
 
+	if (transparent[get(x1, y1, z1)] == 5)
+		return false;
+
 	// Leaves do not block any other block, including themselves
-	if (transparent[get(x2, y2, z2)] == 1)
+	if (transparent[get(x2, y2, z2)] == 1 || transparent[get(x2, y2, z2)] == 5)
 		return false;
 
 	// Non-transparent blocks always block line of sight
@@ -158,26 +161,39 @@ void Chunk::noise(int seed) {
 				if (y + ay * CY >= h) {
 					// If we are not yet up to sea level, fill with water blocks
 					if (y + ay * CY < SEALEVEL) {
-						blk[x][y][z] = 8;
+						blk[x][y][z] = 9;
 						continue;
 						// Otherwise, we are in the air
 					}
 					else {
 						// A tree!
-						if (get(x, y - 1, z) == 3 && (rand() & 0xff) == 0) {
-							// Trunk
-							h = (rand() & 0x3) + 3;
-							for (int i = 0; i < h; i++)
-								set(x, y + i, z, 5);
+						if (get(x, y - 1, z) == 2) {
+							int ran = rand();
+							if ((ran <= 255))
+							{
+								// Trunk
+								h = (rand() & 0x3) + 3;
+								for (int i = 0; i < h; i++)
+									set(x, y + i, z, 25);
 
-							// Leaves
-							for (int ix = -3; ix <= 3; ix++) {
-								for (int iy = -3; iy <= 3; iy++) {
-									for (int iz = -3; iz <= 3; iz++) {
-										if (ix * ix + iy * iy + iz * iz < 8 + (rand() & 1) && !get(x + ix, y + h + iy, z + iz))
-											set(x + ix, y + h + iy, z + iz, 4);
+								// Leaves
+								for (int ix = -3; ix <= 3; ix++) {
+									for (int iy = -3; iy <= 3; iy++) {
+										for (int iz = -3; iz <= 3; iz++) {
+											if (ix * ix + iy * iy + iz * iz < 8 + (rand() & 1) && !get(x + ix, y + h + iy, z + iz))
+												set(x + ix, y + h + iy, z + iz, 24);
+										}
 									}
 								}
+							}
+							else if (ran <= 2500)
+							{
+								set(x, y, z, 42);
+							}
+							else if (ran <= 3500)
+							{
+								int flower = (rand() % 5) + 35;
+								set(x, y, z, flower);
 							}
 						}
 						break;
@@ -189,16 +205,16 @@ void Chunk::noise(int seed) {
 
 				// Sand layer
 				if (n + r * 5 < 4)
-					blk[x][y][z] = 7;
+					blk[x][y][z] = 6;
 				// Dirt layer, but use grass blocks for the top
 				else if (n + r * 5 < 8)
-					blk[x][y][z] = (h < SEALEVEL || y + ay * CY < h - 1) ? 1 : 3;
+					blk[x][y][z] = (h < SEALEVEL || y + ay * CY < h - 1) ? 3 : 2;
 				// Rock layer
 				else if (r < 1.25)
-					blk[x][y][z] = 6;
+					blk[x][y][z] = 1;
 				// Sometimes, ores!
 				else
-					blk[x][y][z] = 11;
+					blk[x][y][z] = 10;
 			}
 		}
 	}
@@ -221,36 +237,32 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
 				uint8_t side = blk[x][y][z];
-
-				// Grass block has dirt sides and bottom
-				if (top == 3) {
-					bottom = 1;
-					side = 2;
-					// Wood blocks have rings on top and bottom
+				uint8_t type = 0;
+				if (side >= 35 && side <= 42)
+				{
+					type = 1;
 				}
-				else if (top == 5) {
-					top = bottom = 12;
+				else if (side == 43)
+				{
+					type = 3;
 				}
 
 				// Same block as previous one? Extend it.
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
-					vertex[i - 5] = byte4(x, y, z + 1, side);
-					vertex[i - 2] = byte4(x, y, z + 1, side);
-					vertex[i - 1] = byte4(x, y + 1, z + 1, side);
+					vertex[i - 5] = byte4(x, y, z + 1, side, type);
+					vertex[i - 2] = byte4(x, y, z + 1, side, type);
+					vertex[i - 1] = byte4(x, y + 1, z + 1, side, type);
 					merged++;
 					// Otherwise, add a new quad.
 				}
 				else {
-					vertex[i++] = byte4(x, y, z, side);
-					vertex[i++] = byte4(x, y, z + 1, side);
-					vertex[i++] = byte4(x, y + 1, z, side);
-					vertex[i++] = byte4(x, y + 1, z, side);
-					vertex[i++] = byte4(x, y, z + 1, side);
-					vertex[i++] = byte4(x, y + 1, z + 1, side);
+					vertex[i++] = byte4(x, y, z, side, type);
+					vertex[i++] = byte4(x, y, z + 1, side, type);
+					vertex[i++] = byte4(x, y + 1, z, side, type);
+					vertex[i++] = byte4(x, y + 1, z, side, type);
+					vertex[i++] = byte4(x, y, z + 1, side, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, side, type);
 				}
 
 				vis = true;
@@ -267,32 +279,31 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
 				uint8_t side = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
-					side = 2;
+				uint8_t type = 0;
+				if (side >= 35 && side <= 42)
+				{
+					vis = true;
+					continue;
 				}
-				else if (top == 5) {
-					top = bottom = 12;
+				else if (side == 43)
+				{
+					type = 4;
 				}
 
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
-					vertex[i - 4] = byte4(x + 1, y, z + 1, side);
-					vertex[i - 2] = byte4(x + 1, y + 1, z + 1, side);
-					vertex[i - 1] = byte4(x + 1, y, z + 1, side);
+					vertex[i - 4] = byte4(x + 1, y, z + 1, side, type);
+					vertex[i - 2] = byte4(x + 1, y + 1, z + 1, side, type);
+					vertex[i - 1] = byte4(x + 1, y, z + 1, side, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x + 1, y, z, side);
-					vertex[i++] = byte4(x + 1, y + 1, z, side);
-					vertex[i++] = byte4(x + 1, y, z + 1, side);
-					vertex[i++] = byte4(x + 1, y + 1, z, side);
-					vertex[i++] = byte4(x + 1, y + 1, z + 1, side);
-					vertex[i++] = byte4(x + 1, y, z + 1, side);
+					vertex[i++] = byte4(x + 1, y, z, side, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, side, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, side, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, side, type);
+					vertex[i++] = byte4(x + 1, y + 1, z + 1, side, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, side, type);
 				}
 				vis = true;
 			}
@@ -308,30 +319,47 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
 				uint8_t bottom = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
+				uint8_t type = 0;
+				if (bottom == 2) 
+				{
+					bottom = 3;
 				}
-				else if (top == 5) {
-					top = bottom = 12;
+				else if (bottom == 25)
+				{
+					bottom = 57;
+				}
+				else if (bottom == 27)
+				{
+					bottom = 58;
+				}
+				else if (bottom == 28)
+				{
+					bottom = 59;
+				}
+				else if (bottom >= 35 && bottom <= 42)
+				{
+					vis = true;
+					continue;
+				}
+				else if (bottom == 43)
+				{
+					bottom = 48;
 				}
 
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
-					vertex[i - 4] = byte4(x, y, z + 1, bottom + 128);
-					vertex[i - 2] = byte4(x + 1, y, z + 1, bottom + 128);
-					vertex[i - 1] = byte4(x, y, z + 1, bottom + 128);
+					vertex[i - 4] = byte4(x, y, z + 1, bottom + 128, type);
+					vertex[i - 2] = byte4(x + 1, y, z + 1, bottom + 128, type);
+					vertex[i - 1] = byte4(x, y, z + 1, bottom + 128, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x, y, z, bottom + 128);
-					vertex[i++] = byte4(x + 1, y, z, bottom + 128);
-					vertex[i++] = byte4(x, y, z + 1, bottom + 128);
-					vertex[i++] = byte4(x + 1, y, z, bottom + 128);
-					vertex[i++] = byte4(x + 1, y, z + 1, bottom + 128);
-					vertex[i++] = byte4(x, y, z + 1, bottom + 128);
+					vertex[i++] = byte4(x, y, z, bottom + 128, type);
+					vertex[i++] = byte4(x + 1, y, z, bottom + 128, type);
+					vertex[i++] = byte4(x, y, z + 1, bottom + 128, type);
+					vertex[i++] = byte4(x + 1, y, z, bottom + 128, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, bottom + 128, type);
+					vertex[i++] = byte4(x, y, z + 1, bottom + 128, type);
 				}
 				vis = true;
 			}
@@ -347,30 +375,47 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
 				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
+				uint8_t type = 0;
+				if (top == 2) {
+					top = 56;
 				}
-				else if (top == 5) {
-					top = bottom = 12;
+				else if (top == 25)
+				{
+					top = 57;
+				}
+				else if (top == 27)
+				{
+					top = 58;
+				}
+				else if (top == 28)
+				{
+					top = 60;
+				}
+				else if (top >= 35 && top <= 42)
+				{
+					vis = true;
+					continue;
+				}
+				else if (top == 43)
+				{
+					type = 5;
+					top = 49;
 				}
 
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
-					vertex[i - 5] = byte4(x, y + 1, z + 1, top + 128);
-					vertex[i - 2] = byte4(x, y + 1, z + 1, top + 128);
-					vertex[i - 1] = byte4(x + 1, y + 1, z + 1, top + 128);
+					vertex[i - 5] = byte4(x, y + 1, z + 1, top + 128, type);
+					vertex[i - 2] = byte4(x, y + 1, z + 1, top + 128, type);
+					vertex[i - 1] = byte4(x + 1, y + 1, z + 1, top + 128, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x, y + 1, z, top + 128);
-					vertex[i++] = byte4(x, y + 1, z + 1, top + 128);
-					vertex[i++] = byte4(x + 1, y + 1, z, top + 128);
-					vertex[i++] = byte4(x + 1, y + 1, z, top + 128);
-					vertex[i++] = byte4(x, y + 1, z + 1, top + 128);
-					vertex[i++] = byte4(x + 1, y + 1, z + 1, top + 128);
+					vertex[i++] = byte4(x, y + 1, z, top + 128, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, top + 128, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, top + 128, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, top + 128, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, top + 128, type);
+					vertex[i++] = byte4(x + 1, y + 1, z + 1, top + 128, type);
 				}
 				vis = true;
 			}
@@ -386,32 +431,30 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
 				uint8_t side = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
-					side = 2;
+				uint8_t type = 0;
+				if (side >= 35 && side <= 42)
+				{
+					type = 2;
 				}
-				else if (top == 5) {
-					top = bottom = 12;
+				else if (side == 43)
+				{
+					type = 6;
 				}
 
 				if (vis && y != 0 && blk[x][y][z] == blk[x][y - 1][z]) {
-					vertex[i - 5] = byte4(x, y + 1, z, side);
-					vertex[i - 3] = byte4(x, y + 1, z, side);
-					vertex[i - 2] = byte4(x + 1, y + 1, z, side);
+					vertex[i - 5] = byte4(x, y + 1, z, side, type);
+					vertex[i - 3] = byte4(x, y + 1, z, side, type);
+					vertex[i - 2] = byte4(x + 1, y + 1, z, side, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x, y, z, side);
-					vertex[i++] = byte4(x, y + 1, z, side);
-					vertex[i++] = byte4(x + 1, y, z, side);
-					vertex[i++] = byte4(x, y + 1, z, side);
-					vertex[i++] = byte4(x + 1, y + 1, z, side);
-					vertex[i++] = byte4(x + 1, y, z, side);
+					vertex[i++] = byte4(x, y, z, side, type);
+					vertex[i++] = byte4(x, y + 1, z, side, type);
+					vertex[i++] = byte4(x + 1, y, z, side, type);
+					vertex[i++] = byte4(x, y + 1, z, side, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, side, type);
+					vertex[i++] = byte4(x + 1, y, z, side, type);
 				}
 				vis = true;
 			}
@@ -427,32 +470,31 @@ void Chunk::update() {
 					vis = false;
 					continue;
 				}
-
-				uint8_t top = blk[x][y][z];
-				uint8_t bottom = blk[x][y][z];
 				uint8_t side = blk[x][y][z];
-
-				if (top == 3) {
-					bottom = 1;
-					side = 2;
+				uint8_t type = 0;
+				if (side >= 35 && side <= 42)
+				{
+					vis = true;
+					continue;
 				}
-				else if (top == 5) {
-					top = bottom = 12;
+				else if (side == 43)
+				{
+					type = 7;
 				}
 
 				if (vis && y != 0 && blk[x][y][z] == blk[x][y - 1][z]) {
-					vertex[i - 4] = byte4(x, y + 1, z + 1, side);
-					vertex[i - 3] = byte4(x, y + 1, z + 1, side);
-					vertex[i - 1] = byte4(x + 1, y + 1, z + 1, side);
+					vertex[i - 4] = byte4(x, y + 1, z + 1, side, type);
+					vertex[i - 3] = byte4(x, y + 1, z + 1, side, type);
+					vertex[i - 1] = byte4(x + 1, y + 1, z + 1, side, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x, y, z + 1, side);
-					vertex[i++] = byte4(x + 1, y, z + 1, side);
-					vertex[i++] = byte4(x, y + 1, z + 1, side);
-					vertex[i++] = byte4(x, y + 1, z + 1, side);
-					vertex[i++] = byte4(x + 1, y, z + 1, side);
-					vertex[i++] = byte4(x + 1, y + 1, z + 1, side);
+					vertex[i++] = byte4(x, y, z + 1, side, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, side, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, side, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, side, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, side, type);
+					vertex[i++] = byte4(x + 1, y + 1, z + 1, side, type);
 				}
 				vis = true;
 			}
@@ -510,6 +552,10 @@ void Chunk::render() {
 		return;
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glVertexAttribPointer(attribute_coord, 4, GL_BYTE, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(cur_program, "coord"));
+	glVertexAttribPointer(glGetAttribLocation(cur_program, "coord"), 4, GL_BYTE, GL_FALSE, 5 * sizeof(uint8_t), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 1, GL_BYTE, GL_FALSE, 5 * sizeof(uint8_t), (void*)(4 * sizeof(uint8_t)));
+	glEnableVertexAttribArray(glGetAttribLocation(cur_program, "coord"));
 	glDrawArrays(GL_TRIANGLES, 0, elements);
 }

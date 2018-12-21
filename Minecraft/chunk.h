@@ -2,9 +2,9 @@
 #include "global.h"
 
 struct byte4 {
-	uint8_t x, y, z, w;
+	uint8_t x, y, z, w, t;
 	byte4() {}
-	byte4(uint8_t x, uint8_t y, uint8_t z, uint8_t w) : x(x), y(y), z(z), w(w) {}
+	byte4(uint8_t x, uint8_t y, uint8_t z, uint8_t w, uint8_t t = 0) : x(x), y(y), z(z), w(w), t(t) {}
 };
 
 class Chunk
@@ -39,5 +39,10 @@ private:
 	bool noised;
 };
 
-static const int transparent[16] = { 2, 0, 0, 0, 1, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 0 };
+static const int transparent[44] = { 2, 0, 0, 0, 0, 0, 0, 4, 
+									 0, 3, 0, 0, 0, 0, 0, 0,
+									 0, 0, 0, 0, 0, 0, 0, 0, 
+									 1, 0, 1, 0, 0, 0, 0, 0, 
+									 0, 0, 0, 5, 5, 5, 5, 5, 
+									 5, 5, 5, 5};
 static Chunk *chunk_slot[CHUNKSLOTS];
