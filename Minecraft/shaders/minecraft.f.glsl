@@ -1,7 +1,7 @@
 #version 330 core
 in vec4 texcoord;
 in float textype;
-uniform sampler2D texture;
+uniform sampler2D blockTexture;
 uniform float timeValue;
 const vec4 fogcolor = vec4(0.6, 0.8, 1.0, 1.0);
 const float fogdensity = .00003;
@@ -55,7 +55,7 @@ void main(void) {
 		intensity = 0.85;
 	}
 	
-	vec4 color = texture2D(texture, coord2d);
+	vec4 color = texture2D(blockTexture, coord2d);
 
 	// Very cheap "transparency": don't draw pixels with a low alpha value
 	if(color.a < 0.4)

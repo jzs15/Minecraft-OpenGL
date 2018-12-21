@@ -129,7 +129,7 @@ void World::render(const glm::mat4 &pv) {
 					continue;
 				}
 
-				glUniformMatrix4fv(glGetAttribLocation(cur_program, "coord"), 1, GL_FALSE, glm::value_ptr(mvp));
+				glUniformMatrix4fv(glGetUniformLocation(cur_program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 
 				c[x][y][z]->render();
 			}

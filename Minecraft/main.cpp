@@ -141,7 +141,7 @@ static int init_resources() {
 	/* OpenGL settings that do not change while running this program */
 
 	glUseProgram(program);
-	glUniform1i(uniform_texture, 0);
+	glUniform1i(glGetUniformLocation(program, "blockTexture"), 0);
 	glClearColor(0.6, 0.8, 1.0, 0.0);
 	//glClearColor(0.0, 0.0, 0.0, 0.0);
 	glEnable(GL_CULL_FACE);
