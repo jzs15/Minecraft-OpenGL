@@ -13,6 +13,9 @@ static Camera *camera;
 bool is_zoom = false;
 GLuint cur_program;
 
+//ISoundEngine *SoundEngine = createIrrKlangDevice();
+//SoundEngine->play2D("audio/breakout.mp3", GL_TRUE);
+
 static void init_skybox()
 {
 	float skyboxVertices[] = {
@@ -215,15 +218,30 @@ static void drawHud() {
 	glUseProgram(program);
 }
 
+static void calculateFrameRate()
+{
+	static float FramePerSecond = 0.0f;
+	static float lastTime = 0.0f;
+	float curTime = GetTickCount() * 0.001f;
+	++FramePerSecond;
+	if (curTime - lastTime > 1.0f)
+	{
+		lastTime = curTime;
+		fps = FramePerSecond;
+		FramePerSecond = 0;
+	}
+}
+
 static void drawText()
 {
 	char txt[1024];
+	calculateFrameRate();
 	glm::vec3 pos = camera->getPosition();
 	int time = 720 * cur_time + 720;
 	int hour = time / 60;
 	int min = time % 60;
 
-	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d", pos.x, pos.y, pos.z, hour, min);
+	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d %dfps", pos.x, pos.y, pos.z, hour, min, fps);
 
 	glBindTexture(GL_TEXTURE_2D, text_texture_id);
 	glDisable(GL_DEPTH_TEST);
@@ -249,7 +267,40 @@ static void drawText()
 		glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
 		glVertexAttribPointer(glGetAttribLocation(text, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 		glDrawArrays(GL_QUADS, 0, 4);
-		widthGap -= 0.025f;
+		widthGap -= 17.0f / ww;
+	}
+	glEnable(GL_DEPTH_TEST);
+	glUseProgram(program);
+	glBindTexture(GL_TEXTURE_2D, block_texture_id);
+}
+
+static void drawInputText()
+{
+	glBindTexture(GL_TEXTURE_2D, text_texture_id);
+	glDisable(GL_DEPTH_TEST);
+	glUseProgram(text);
+
+	float textWidth = 25.0f / ww;
+	float textHeight = 25.0f / wh;
+	float widthGap = 1 - 5.0f / ww;
+	float heightGap = 1.0 - 35.0f / wh;
+	float textureGap = 1 / 16.0f;
+
+	int len = strlen(input_text);
+	for (int i = 0; i < len; i++)
+	{
+		float u = (input_text[i] % 16) / 16.0f;
+		float v = int(input_text[i] / 16) / 16.0f;
+		float blocksVertex[4][4] = {
+			{-widthGap, heightGap, u, v},												//left top
+			{-widthGap, heightGap - textHeight, u, v + textureGap},					//left bottom
+			{textWidth - widthGap, heightGap - textHeight, u + textureGap, v + textureGap},			//right bottom
+			{textWidth - widthGap, heightGap, u + textureGap, v},		//right top
+		};
+		glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(glGetAttribLocation(text, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
+		glDrawArrays(GL_QUADS, 0, 4);
+		widthGap -= 20.0f / ww;
 	}
 	glEnable(GL_DEPTH_TEST);
 	glUseProgram(program);
@@ -396,6 +447,10 @@ static void display() {
 
 	drawHud();
 	drawText();
+	if (is_input)
+	{
+		drawInputText();
+	}
 	/* And we are done */
 
 	glutSwapBuffers();
@@ -540,6 +595,24 @@ static void mouse(int button, int state, int x, int y) {
 
 void processNormalKeys(unsigned char key, int x, int y)
 {
+	if (is_input)
+	{
+		if (key == KEY_ESCAPE)
+		{
+			memset(input_text, 0, sizeof(input_text));
+			is_input = !is_input;
+			return;
+		}
+		else if (key == KEY_ENTER)
+		{
+			is_input = !is_input;
+			//load rendering function
+			memset(input_text, 0, sizeof(input_text));
+			return;
+		}
+		snprintf(input_text, 1024, "%s%c", input_text, key);
+		return;
+	}
 	switch (key) {
 	case KEY_LEFT:
 		keys |= 1;
@@ -567,6 +640,12 @@ void processNormalKeys(unsigned char key, int x, int y)
 		if (!is_ortho)
 		{
 			is_ortho = !is_ortho;
+		}
+		break;
+	case KEY_INPUT:
+		if (!is_input)
+		{
+			is_input = !is_input;
 		}
 		break;
 	case KEY_ENTER:
