@@ -14,6 +14,7 @@
 #define SCZ 32
 #define CHUNKSLOTS (SCX * SCY * SCZ)
 #define SEALEVEL 4
+#define ONE_DAY 600000
 #define M_PI 3.14159265359
 
 #define KEY_UP 119
@@ -31,8 +32,10 @@ extern GLuint cur_program;
 static GLuint program;
 static GLuint hud;
 static GLuint skybox;
+static GLuint text;
 static GLuint block_texture_id;
 static GLuint sky_texture_id;
+static GLuint text_texture_id;
 static GLint uniform_texture;
 static GLuint cursor_vbo;
 static GLuint skybox_vao;

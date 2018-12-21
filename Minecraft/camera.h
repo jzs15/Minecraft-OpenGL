@@ -32,7 +32,7 @@ public:
 	glm::vec3 getPosition();
 	glm::vec3 getFront();
 	glm::vec3 getRight();
-	void gravity(World *world);
+	void gravity(float deltaTime, World *world);
 	void changeType();
 
 
