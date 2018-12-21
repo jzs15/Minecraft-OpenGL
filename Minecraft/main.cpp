@@ -223,7 +223,7 @@ static void drawText()
 	int hour = time / 60;
 	int min = time % 60;
 
-	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d", pos.x, pos.y, pos.z, hour, min);
+	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d", pos.x, pos.y - 1.4, pos.z, hour, min);
 
 	glBindTexture(GL_TEXTURE_2D, text_texture_id);
 	glDisable(GL_DEPTH_TEST);
