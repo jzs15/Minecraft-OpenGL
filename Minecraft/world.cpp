@@ -45,8 +45,8 @@ uint8_t World::get(int x, int y, int z) const {
 	int cy = (y + CY * (SCY / 2));
 	int cz = (z + CZ * (SCZ / 2));
 	cx = cx < 0 ? cx / CX - 1 : cx / CX;
-	cy = cy < 0 ? cy / CX - 1 : cy / CX;
-	cz = cz < 0 ? cz / CX - 1 : cz / CX;
+	cy = cy < 0 ? cy / CY - 1 : cy / CY;
+	cz = cz < 0 ? cz / CZ - 1 : cz / CZ;
 
 	if (cx < 0 || cx >= SCX || cy < 0 || cy >= SCY || cz < 0 || cz >= SCZ) {
 		return 0;
@@ -67,8 +67,8 @@ void World::set(int x, int y, int z, uint8_t type) {
 	int cy = (y + CY * (SCY / 2));
 	int cz = (z + CZ * (SCZ / 2));
 	cx = cx < 0 ? (cx - 1) / CX : cx / CX;
-	cy = cy < 0 ? (cy - 1) / CX : cy / CX;
-	cz = cz < 0 ? (cz - 1) / CX : cz / CX;
+	cy = cy < 0 ? (cy - 1) / CY : cy / CY;
+	cz = cz < 0 ? (cz - 1) / CX : cz / CZ;
 
 	if (cx < 0 || cx >= SCX || cy < 0 || cy >= SCY || cz < 0 || cz >= SCZ)
 		return;
