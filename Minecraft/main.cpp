@@ -215,8 +215,16 @@ static void drawHud() {
 	glUseProgram(program);
 }
 
-static void drawText(char *txt)
+static void drawText()
 {
+	char txt[1024];
+	glm::vec3 pos = camera->getPosition();
+	int time = 720 * cur_time + 720;
+	int hour = time / 60;
+	int min = time % 60;
+
+	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d", pos.x, pos.y, pos.z, hour, min);
+
 	glBindTexture(GL_TEXTURE_2D, text_texture_id);
 	glDisable(GL_DEPTH_TEST);
 	glUseProgram(text);
@@ -242,7 +250,7 @@ static void drawText(char *txt)
 		glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
 		glVertexAttribPointer(glGetAttribLocation(text, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 		glDrawArrays(GL_QUADS, 0, 4);
-		widthGap -= 0.03f;
+		widthGap -= 20.0f / ww;
 	}
 	glEnable(GL_DEPTH_TEST);
 	glUseProgram(program);
@@ -388,11 +396,7 @@ static void display() {
 
 
 	drawHud();
-	char txt[1024];
-	glm::vec3 pos = camera->getPosition();
-	snprintf(txt, 1024, "(%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
-	drawText(txt);
-	std::cout << txt << std::endl;
+	drawText();
 	/* And we are done */
 
 	glutSwapBuffers();
@@ -582,11 +586,6 @@ void processNormalKeys(unsigned char key, int x, int y)
 		break;
 	default:
 		break;
-	}
-	int mod = glutGetModifiers();
-	if (mod == GLUT_ACTIVE_ALT)
-	{
-		printf("sdfsdsdfs\n");
 	}
 }
 
