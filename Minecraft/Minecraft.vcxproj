@@ -31,7 +31,6 @@
     <ClInclude Include="camera.h" />
     <ClInclude Include="chunk.h" />
     <ClInclude Include="global.h" />
-    <ClInclude Include="shader.h" />
     <ClInclude Include="shader_utils.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture.h" />
