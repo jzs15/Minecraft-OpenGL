@@ -94,8 +94,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IncludePath>D:\Sources\Repos\VisualStudio\Minecraft\Minecraft\includes;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Sources\Repos\VisualStudio\Minecraft\Minecraft\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\youkg\source\repos\jzs15\Minecraft\Minecraft\includes;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\youkg\source\repos\jzs15\Minecraft\Minecraft\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
