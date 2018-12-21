@@ -41,6 +41,10 @@ World::~World()
 }
 
 uint8_t World::get(int x, int y, int z) const {
+	if(x < 0 || x >= SCX * CX || y < 0 || y >= SCY * CY || z < 0 || z >= SCZ * CZ) {
+		return 0;
+	}
+
 	int cx = (x + CX * (SCX / 2)) / CX;
 	int cy = (y + CY * (SCY / 2)) / CY;
 	int cz = (z + CZ * (SCZ / 2)) / CZ;
@@ -60,6 +64,9 @@ bool World::isBlock(int x, int y, int z)
 }
 
 void World::set(int x, int y, int z, uint8_t type) {
+	if (x < 0 || x >= SCX * CX || y < 0 || y >= SCY * CY || z < 0 || z >= SCZ * CZ) {
+		return;
+	}
 	int cx = (x + CX * (SCX / 2)) / CX;
 	int cy = (y + CY * (SCY / 2)) / CY;
 	int cz = (z + CZ * (SCZ / 2)) / CZ;
