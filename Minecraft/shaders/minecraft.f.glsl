@@ -97,12 +97,12 @@ void main(void) {
 		discard;
 
 	// Attenuate sides of blocks
-	color.xyz *= intensity * lightColor;
+	color.xyz *= intensity;
 
 	// Calculate strength of fog
 	float z = gl_FragCoord.z / gl_FragCoord.w;
 	float fog = clamp(exp(-fogdensity * z * z), 0.2, 1.0);
-
+	color = mix(fogcolor, color, fog);
 	// Final color is a mix of the actual color and the fog color
-	gl_FragColor = mix(fogcolor, color, fog);
+	gl_FragColor = vec4(color.rgb * lightColor, color.a);
 }
