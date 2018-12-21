@@ -108,7 +108,7 @@ static void init_skybox()
 
 static void init_text()
 {
-	Texture text_texture("resources/textures/font.png");
+	Texture text_texture("resources/textures/text.png");
 	glGenTextures(1, &text_texture_id);
 	glBindTexture(GL_TEXTURE_2D, text_texture_id);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, text_texture.getWidth(), text_texture.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, text_texture.getData());
@@ -215,34 +215,41 @@ static void drawHud() {
 	glUseProgram(program);
 }
 
-static void drawText(char *txt)
+static void drawText()
 {
+	char txt[1024];
+	glm::vec3 pos = camera->getPosition();
+	int time = 720 * cur_time + 720;
+	int hour = time / 60;
+	int min = time % 60;
+
+	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d", pos.x, pos.y, pos.z, hour, min);
+
 	glBindTexture(GL_TEXTURE_2D, text_texture_id);
 	glDisable(GL_DEPTH_TEST);
 	glUseProgram(text);
 
 	float textWidth = 20.0f / ww;
-	float textHeight = 40.0f / wh;
+	float textHeight = 20.0f / wh;
 	float widthGap = 1 - 5.0f / ww;
 	float heightGap = 1.0 - 5.0f / wh;
-	float textureXGap = 1 / 16.0f;
-	float textureYGap = 1 / 8.0f;
+	float textureGap = 1 / 16.0f;
 
 	int len = strlen(txt);
 	for (int i = 0; i < len; i++)
 	{
 		float u = (txt[i] % 16) / 16.0f;
-		float v = int(txt[i] / 16 - 2.0f) / 8.0f;
+		float v = int(txt[i] / 16) / 16.0f;
 		float blocksVertex[4][4] = {
 			{-widthGap, heightGap, u, v},												//left top
-			{-widthGap, heightGap - textHeight, u, v + textureYGap},					//left bottom
-			{textWidth - widthGap, heightGap - textHeight, u + textureXGap, v + textureYGap},			//right bottom
-			{textWidth - widthGap, heightGap, u + textureXGap, v},		//right top
+			{-widthGap, heightGap - textHeight, u, v + textureGap},					//left bottom
+			{textWidth - widthGap, heightGap - textHeight, u + textureGap, v + textureGap},			//right bottom
+			{textWidth - widthGap, heightGap, u + textureGap, v},		//right top
 		};
 		glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
 		glVertexAttribPointer(glGetAttribLocation(text, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 		glDrawArrays(GL_QUADS, 0, 4);
-		widthGap -= 0.03f;
+		widthGap -= 0.025f;
 	}
 	glEnable(GL_DEPTH_TEST);
 	glUseProgram(program);
@@ -388,11 +395,7 @@ static void display() {
 
 
 	drawHud();
-	char txt[1024];
-	glm::vec3 pos = camera->getPosition();
-	snprintf(txt, 1024, "(%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
-	drawText(txt);
-	std::cout << txt << std::endl;
+	drawText();
 	/* And we are done */
 
 	glutSwapBuffers();
@@ -412,12 +415,8 @@ static void special(int key, int x, int y) {
 	case GLUT_KEY_DOWN:
 		keys |= 512;
 		break;
-	case GLUT_KEY_F1:
-		select_using_depthbuffer = !select_using_depthbuffer;
-		if (select_using_depthbuffer)
-			printf("Using depth buffer selection method\n");
-		else
-			printf("Using ray casting selection method\n");
+	case KEY_SHIFT:
+		camera->changeType();
 		break;
 	}
 }
@@ -557,7 +556,7 @@ void processNormalKeys(unsigned char key, int x, int y)
 	case KEY_SPACE:
 		keys |= 16;
 		break;
-	case KEY_ZOOM:
+	case KEY_Z:
 		//keys |= 32;
 		if (!is_zoom)
 		{
@@ -583,11 +582,6 @@ void processNormalKeys(unsigned char key, int x, int y)
 	default:
 		break;
 	}
-	int mod = glutGetModifiers();
-	if (mod == GLUT_ACTIVE_ALT)
-	{
-		printf("sdfsdsdfs\n");
-	}
 }
 
 void processNormalUpKeys(unsigned char key, int x, int y)
@@ -608,7 +602,7 @@ void processNormalUpKeys(unsigned char key, int x, int y)
 	case KEY_SPACE:
 		keys &= ~16;
 		break;
-	case KEY_ZOOM:
+	case KEY_Z:
 		//keys &= ~32;
 		if (is_zoom)
 		{
@@ -626,9 +620,6 @@ void processNormalUpKeys(unsigned char key, int x, int y)
 		{
 			enter_press = !enter_press;
 		}
-		break;
-	case KEY_TAB:
-		camera->changeType();
 		break;
 	default:
 		break;
@@ -663,7 +654,6 @@ int main(int argc, char* argv[]) {
 	printf("Press the right mouse button to remove a block.\n");
 	printf("Use the scrollwheel to select different types of blocks.\n");
 	printf("Press F1 to toggle between depth buffer and ray casting methods for cube selection.\n");
-
 	if (init_resources()) {
 		glutSetCursor(GLUT_CURSOR_NONE);
 		glutWarpPointer(320, 240);
