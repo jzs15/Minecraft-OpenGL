@@ -14,7 +14,7 @@
 #define SCZ 32
 #define CHUNKSLOTS (SCX * SCY * SCZ)
 #define SEALEVEL 4
-#define ONE_DAY 600000
+#define ONE_DAY 6000
 #define M_PI 3.14159265359
 
 #define KEY_UP 119
@@ -25,8 +25,9 @@
 #define KEY_SPACE 32
 #define KEY_ENTER 13
 #define KEY_TAB 9
+#define KEY_SHIFT 112
 #define KEY_F 102
-#define KEY_ZOOM 122
+#define KEY_Z 122
 
 extern GLuint cur_program;
 static GLuint program;

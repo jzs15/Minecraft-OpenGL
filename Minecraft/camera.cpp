@@ -202,6 +202,7 @@ void Camera::gravity(float deltaTime, World *world)
 void Camera::changeType()
 {
 	isWalking = !isWalking;
+	movementSpeed = isWalking ? 7.0 : 20.0;
 	gravitySpeed = 0.0f;
 }
 
