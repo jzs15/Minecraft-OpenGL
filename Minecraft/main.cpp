@@ -126,7 +126,7 @@ static int init_resources() {
 	if (program == 0 || hud == 0 || skybox == 0 || text == 0)
 		return 0;
 
-	cur_time = -1.0;
+	cur_time = -0.3;
 	init_skybox();
 	init_text();
 	/* Create and upload the texture */
@@ -150,7 +150,7 @@ static int init_resources() {
 	/* OpenGL settings that do not change while running this program */
 
 	glUseProgram(program);
-	glUniform1i(uniform_texture, 0);
+	glUniform1i(glGetUniformLocation(program, "blockTexture"), 0);
 	glClearColor(0.6, 0.8, 1.0, 0.0);
 	//glClearColor(0.0, 0.0, 0.0, 0.0);
 	glEnable(GL_CULL_FACE);
@@ -266,10 +266,6 @@ static void display() {
 	}
 	glm::mat4 sky_mvp = projection * glm::mat4(glm::mat3(view));
 	glm::mat4 mvp = projection * view;
-	cur_time += 0.001;
-
-	if (cur_time >= 1.0)
-		cur_time = -1.0;
 
 	glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 
@@ -292,6 +288,7 @@ static void display() {
 	glDepthFunc(GL_LESS);
 
 
+	glUniform1f(glGetUniformLocation(program, "timeValue"), cur_time);
 	/* Then draw chunks */
 	cur_program = program;
 	world->render(mvp);
@@ -446,15 +443,17 @@ static void idle() {
 	static int pt = 0;
 	now = time(0);
 	int t = glutGet(GLUT_ELAPSED_TIME);
-	float dt = (t - pt) * 1.0e-3;
+	float gap = t - pt;
+	float dt = gap * 1.0e-3;
 	pt = t;
-
+	cur_time += 2.0 * gap / ONE_DAY;
+	cur_time = cur_time >= 1.0 ? glm::fract(cur_time) - 1 : cur_time;
 
 	if (keys != 0)
 	{
 		camera->processKeyboard(keys, dt, world);
 	}
-	camera->gravity(world);
+	camera->gravity(dt, world);
 	glutPostRedisplay();
 }
 
@@ -664,7 +663,6 @@ int main(int argc, char* argv[]) {
 	printf("Press the right mouse button to remove a block.\n");
 	printf("Use the scrollwheel to select different types of blocks.\n");
 	printf("Press F1 to toggle between depth buffer and ray casting methods for cube selection.\n");
-
 	if (init_resources()) {
 		glutSetCursor(GLUT_CURSOR_NONE);
 		glutWarpPointer(320, 240);

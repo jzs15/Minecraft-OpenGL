@@ -41,9 +41,12 @@ World::~World()
 }
 
 uint8_t World::get(int x, int y, int z) const {
-	int cx = (x + CX * (SCX / 2)) / CX;
-	int cy = (y + CY * (SCY / 2)) / CY;
-	int cz = (z + CZ * (SCZ / 2)) / CZ;
+	int cx = (x + CX * (SCX / 2));
+	int cy = (y + CY * (SCY / 2));
+	int cz = (z + CZ * (SCZ / 2));
+	cx = cx < 0 ? cx / CX - 1 : cx / CX;
+	cy = cy < 0 ? cy / CY - 1 : cy / CY;
+	cz = cz < 0 ? cz / CZ - 1 : cz / CZ;
 
 	if (cx < 0 || cx >= SCX || cy < 0 || cy >= SCY || cz < 0 || cz >= SCZ) {
 		return 0;
@@ -60,9 +63,12 @@ bool World::isBlock(int x, int y, int z)
 }
 
 void World::set(int x, int y, int z, uint8_t type) {
-	int cx = (x + CX * (SCX / 2)) / CX;
-	int cy = (y + CY * (SCY / 2)) / CY;
-	int cz = (z + CZ * (SCZ / 2)) / CZ;
+	int cx = (x + CX * (SCX / 2));
+	int cy = (y + CY * (SCY / 2));
+	int cz = (z + CZ * (SCZ / 2));
+	cx = cx < 0 ? (cx - 1) / CX : cx / CX;
+	cy = cy < 0 ? (cy - 1) / CY : cy / CY;
+	cz = cz < 0 ? (cz - 1) / CX : cz / CZ;
 
 	if (cx < 0 || cx >= SCX || cy < 0 || cy >= SCY || cz < 0 || cz >= SCZ)
 		return;
@@ -99,13 +105,10 @@ void World::render(const glm::mat4 &pv) {
 				float d = glm::length(center);
 				center.x /= center.w;
 				center.y /= center.w;
-
-				// If it is behind the camera, don't bother drawing it
-				if (center.z < -CY / 2)
-					continue;
+				center.z /= center.w;
 
 				// If it is outside the screen, don't bother drawing it
-				if (!is_zoom && (fabsf(center.x) > 1 + fabsf(CY * 2 / center.w) || fabsf(center.y) > 1 + fabsf(CY * 2 / center.w)))
+				if (!is_zoom && (fabsf(center.x) > 1 + fabsf(CX * 2 / center.w) || fabsf(center.y) > 1 + fabsf(CY * 2 / center.w) || fabsf(center.z) > 1 + fabsf(CZ * 2 / center.w)))
 				{
 					continue;
 				}
@@ -122,7 +125,7 @@ void World::render(const glm::mat4 &pv) {
 					continue;
 				}
 
-				glUniformMatrix4fv(glGetAttribLocation(cur_program, "coord"), 1, GL_FALSE, glm::value_ptr(mvp));
+				glUniformMatrix4fv(glGetUniformLocation(cur_program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 
 				c[x][y][z]->render();
 			}
