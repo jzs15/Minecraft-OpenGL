@@ -216,7 +216,7 @@ void Camera::setNextPosition(glm::vec3 direction, World *world)
 	{
 		newPosition.x = floorPosition.x + 1 - 0.25;
 	}
-	else if (direction.x < 0 && (world->isBlock(floorPosition.x - 1, floorPosition.y, floorPosition.z) 
+	else if (direction.x < 0 && (world->isBlock(floorPosition.x - 1, floorPosition.y, floorPosition.z)
 		|| world->isBlock(floorPosition.x - 1, floorPosition.y - 1, floorPosition.z))
 		&& (newPosition.x - floorPosition.x) < 0.25)
 	{

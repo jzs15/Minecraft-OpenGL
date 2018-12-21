@@ -103,23 +103,32 @@ static void init_skybox()
 	
 
 	glUseProgram(skybox);
-	GLuint temp_d = glGetUniformLocation(skybox, "skybox");
 	glUniform1i(glGetUniformLocation(skybox, "skybox"), 0);
-
-
 }
+
+static void init_text()
+{
+	Texture text_texture("resources/textures/font.png");
+	glGenTextures(1, &text_texture_id);
+	glBindTexture(GL_TEXTURE_2D, text_texture_id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, text_texture.getWidth(), text_texture.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, text_texture.getData());
+	glGenerateMipmap(GL_TEXTURE_2D);
+}
+
 static int init_resources() {
 	/* Create shaders */
 
 	program = create_program("shaders/minecraft.v.glsl", "shaders/minecraft.f.glsl");
 	hud = create_program("shaders/hud.v.glsl", "shaders/hud.f.glsl");
 	skybox = create_program("shaders/skybox.v.glsl", "shaders/skybox.f.glsl");
+	text = create_program("shaders/hud.v.glsl", "shaders/hud.f.glsl");
 
-	if (program == 0 || hud == 0 || skybox == 0)
+	if (program == 0 || hud == 0 || skybox == 0 || text == 0)
 		return 0;
 
 	cur_time = -0.3;
 	init_skybox();
+	init_text();
 	/* Create and upload the texture */
 	Texture blocks("resources/textures/blocks.png");
 
@@ -186,7 +195,6 @@ static void drawHud() {
 	glBufferData(GL_ARRAY_BUFFER, sizeof cross, cross, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(glGetAttribLocation(hud, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glDrawArrays(GL_LINES, 0, 4);
-
 	float hudWidth = 150.0f / ww;
 	float widthGap = 1.0 - 50.0f / ww;
 	float hudHeight = 150.0f / wh;
@@ -195,7 +203,7 @@ static void drawHud() {
 	float v = int(buildtype / 8) / 8.0f;
 	float textureGap = 1 / 8.0f;
 	float blocksVertex[4][4] = {
-		{-widthGap, -heightGap, u, v + textureGap},
+		{-widthGap, -heightGap, u, v + textureGap},	
 		{-widthGap, hudHeight - heightGap, u, v},
 		{hudWidth - widthGap, hudHeight - heightGap, u + textureGap, v},
 		{hudWidth - widthGap, -heightGap, u + textureGap, v + textureGap},
@@ -205,6 +213,40 @@ static void drawHud() {
 	glDrawArrays(GL_QUADS, 0, 4);
 	glEnable(GL_DEPTH_TEST);
 	glUseProgram(program);
+}
+
+static void drawText(char *txt)
+{
+	glBindTexture(GL_TEXTURE_2D, text_texture_id);
+	glDisable(GL_DEPTH_TEST);
+	glUseProgram(text);
+
+	float textWidth = 20.0f / ww;
+	float textHeight = 40.0f / wh;
+	float widthGap = 1 - 5.0f / ww;
+	float heightGap = 1.0 - 5.0f / wh;
+	float textureXGap = 1 / 16.0f;
+	float textureYGap = 1 / 8.0f;
+
+	int len = strlen(txt);
+	for (int i = 0; i < len; i++)
+	{
+		float u = (txt[i] % 16) / 16.0f;
+		float v = int(txt[i] / 16 - 2.0f) / 8.0f;
+		float blocksVertex[4][4] = {
+			{-widthGap, heightGap, u, v},												//left top
+			{-widthGap, heightGap - textHeight, u, v + textureYGap},					//left bottom
+			{textWidth - widthGap, heightGap - textHeight, u + textureXGap, v + textureYGap},			//right bottom
+			{textWidth - widthGap, heightGap, u + textureXGap, v},		//right top
+		};
+		glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(glGetAttribLocation(text, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
+		glDrawArrays(GL_QUADS, 0, 4);
+		widthGap -= 0.03f;
+	}
+	glEnable(GL_DEPTH_TEST);
+	glUseProgram(program);
+	glBindTexture(GL_TEXTURE_2D, block_texture_id);
 }
 
 static void display() {
@@ -346,6 +388,11 @@ static void display() {
 
 
 	drawHud();
+	char txt[1024];
+	glm::vec3 pos = camera->getPosition();
+	snprintf(txt, 1024, "(%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
+	drawText(txt);
+	std::cout << txt << std::endl;
 	/* And we are done */
 
 	glutSwapBuffers();
@@ -494,7 +541,6 @@ static void mouse(int button, int state, int x, int y) {
 
 void processNormalKeys(unsigned char key, int x, int y)
 {
-	
 	switch (key) {
 	case KEY_LEFT:
 		keys |= 1;
@@ -617,7 +663,6 @@ int main(int argc, char* argv[]) {
 	printf("Press the right mouse button to remove a block.\n");
 	printf("Use the scrollwheel to select different types of blocks.\n");
 	printf("Press F1 to toggle between depth buffer and ray casting methods for cube selection.\n");
-
 	if (init_resources()) {
 		glutSetCursor(GLUT_CURSOR_NONE);
 		glutWarpPointer(320, 240);
@@ -626,6 +671,8 @@ int main(int argc, char* argv[]) {
 		glutIdleFunc(display);
 		glutKeyboardFunc(processNormalKeys);
 		glutKeyboardUpFunc(processNormalUpKeys);
+		glutSpecialFunc(special);
+		glutSpecialUpFunc(specialup);
 		glutIdleFunc(idle);
 		glutPassiveMotionFunc(motion);
 		glutMotionFunc(motion);
