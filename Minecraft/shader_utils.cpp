@@ -3,10 +3,6 @@
 #include <stdlib.h>
 #include <GL/glew.h>
 
-/**
- * Store all the file's contents in memory, useful to pass shaders
- * source code to OpenGL
- */
 char* file_read(const char* filename)
 {
   FILE* in = fopen(filename, "rb");
@@ -32,9 +28,6 @@ char* file_read(const char* filename)
   return res;
 }
 
-/**
- * Display compilation errors from the OpenGL shader compiler
- */
 void print_log(GLuint object)
 {
   GLint log_length = 0;
@@ -58,9 +51,6 @@ void print_log(GLuint object)
   free(log);
 }
 
-/**
- * Compile the shader from file 'filename', with error handling
- */
 GLuint create_shader(const char* filename, GLenum type)
 {
   const GLchar* source = file_read(filename);

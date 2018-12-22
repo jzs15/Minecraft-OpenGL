@@ -750,12 +750,6 @@ int main(int argc, char* argv[]) {
 	}
 	SoundEngine->play2D("audio/Where Are We Now.mp3", GL_TRUE);
 	printf("Use the mouse to look around.\n");
-	printf("Use cursor keys, pageup and pagedown to move around.\n");
-	printf("Use home and end to go to two predetermined positions.\n");
-	printf("Press the left mouse button to build a block.\n");
-	printf("Press the right mouse button to remove a block.\n");
-	printf("Use the scrollwheel to select different types of blocks.\n");
-	printf("Press F1 to toggle between depth buffer and ray casting methods for cube selection.\n");
 	if (init_resources()) {
 		glutSetCursor(GLUT_CURSOR_NONE);
 		glutWarpPointer(320, 240);

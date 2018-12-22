@@ -42,27 +42,22 @@ uint8_t Chunk::get(int x, int y, int z) const {
 }
 
 bool Chunk::isblocked(int x1, int y1, int z1, int x2, int y2, int z2) {
-	// Invisible blocks are always "blocked"
 	if (!blk[x1][y1][z1])
 		return true;
 
 	if (transparent[get(x1, y1, z1)] == 5)
 		return false;
 
-	// Leaves do not block any other block, including themselves
 	if (transparent[get(x2, y2, z2)] == 1 || transparent[get(x2, y2, z2)] == 5)
 		return false;
 
-	// Non-transparent blocks always block line of sight
 	if (!transparent[get(x2, y2, z2)])
 		return true;
 
-	// Otherwise, LOS is only blocked by blocks if the same transparency type
 	return transparent[get(x2, y2, z2)] == transparent[blk[x1][y1][z1]];
 }
 
 void Chunk::set(int x, int y, int z, uint8_t type) {
-	// If coordinates are outside this chunk, find the right one.
 	if (x < 0) {
 		if (left)
 			left->set(x + CX, y, z, type);
@@ -94,12 +89,9 @@ void Chunk::set(int x, int y, int z, uint8_t type) {
 		return;
 	}
 
-	// Change the block
 	blk[x][y][z] = type;
 	changed = true;
 
-	// When updating blocks at the edge of this chunk,
-	// visibility of blocks in the neighbouring chunk might change.
 	if (x == 0 && left)
 		left->changed = true;
 	if (x == CX - 1 && right)
@@ -150,33 +142,25 @@ void Chunk::noise(int seed) {
 
 	for (int x = 0; x < CX; x++) {
 		for (int z = 0; z < CZ; z++) {
-			// Land height
 			float n = noise2d((x + ax * CX) / 256.0, (z + az * CZ) / 256.0, seed, 5, 0.8) * 4;
 			int h = n * 2;
 			int y = 0;
 
-			// Land blocks
 			for (y = 0; y < CY; y++) {
-				// Are we above "ground" level?
 				if (y + ay * CY >= h) {
-					// If we are not yet up to sea level, fill with water blocks
 					if (y + ay * CY < SEALEVEL) {
 						blk[x][y][z] = 9;
 						continue;
-						// Otherwise, we are in the air
 					}
 					else {
-						// A tree!
 						if (get(x, y - 1, z) == 2) {
 							int ran = rand();
 							if ((ran <= 255))
 							{
-								// Trunk
 								h = (rand() & 0x3) + 3;
 								for (int i = 0; i < h; i++)
 									set(x, y + i, z, 25);
 
-								// Leaves
 								for (int ix = -3; ix <= 3; ix++) {
 									for (int iy = -3; iy <= 3; iy++) {
 										for (int iz = -3; iz <= 3; iz++) {
@@ -200,19 +184,14 @@ void Chunk::noise(int seed) {
 					}
 				}
 
-				// Random value used to determine land type
 				float r = noise3d_abs((x + ax * CX) / 16.0, (y + ay * CY) / 16.0, (z + az * CZ) / 16.0, -seed, 2, 1);
 
-				// Sand layer
 				if (n + r * 5 < 4)
 					blk[x][y][z] = 6;
-				// Dirt layer, but use grass blocks for the top
 				else if (n + r * 5 < 8)
 					blk[x][y][z] = (h < SEALEVEL || y + ay * CY < h - 1) ? 3 : 2;
-				// Rock layer
 				else if (r < 1.25)
 					blk[x][y][z] = 1;
-				// Sometimes, ores!
 				else
 					blk[x][y][z] = 10;
 			}
@@ -227,12 +206,10 @@ void Chunk::update() {
 	int merged = 0;
 	bool vis = false;;
 
-	// View from negative x
-
+	// negative x
 	for (int x = CX - 1; x >= 0; x--) {
 		for (int y = 0; y < CY; y++) {
 			for (int z = 0; z < CZ; z++) {
-				// Line of sight blocked?
 				if (isblocked(x, y, z, x - 1, y, z)) {
 					vis = false;
 					continue;
@@ -248,13 +225,11 @@ void Chunk::update() {
 					type = 3;
 				}
 
-				// Same block as previous one? Extend it.
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
 					vertex[i - 5] = byte4(x, y, z + 1, side, 1, type);
 					vertex[i - 2] = byte4(x, y, z + 1, side, 1, type);
 					vertex[i - 1] = byte4(x, y + 1, z + 1, side, 1, type);
 					merged++;
-					// Otherwise, add a new quad.
 				}
 				else {
 					vertex[i++] = byte4(x, y, z, side, 1, type);
@@ -270,7 +245,7 @@ void Chunk::update() {
 		}
 	}
 
-	// View from positive x
+	// positive x
 
 	for (int x = 0; x < CX; x++) {
 		for (int y = 0; y < CY; y++) {
@@ -310,7 +285,7 @@ void Chunk::update() {
 		}
 	}
 
-	// View from negative y
+	// negative y
 
 	for (int x = 0; x < CX; x++) {
 		for (int y = CY - 1; y >= 0; y--) {
@@ -366,7 +341,7 @@ void Chunk::update() {
 		}
 	}
 
-	// View from positive y
+	// positive y
 
 	for (int x = 0; x < CX; x++) {
 		for (int y = 0; y < CY; y++) {
@@ -422,7 +397,7 @@ void Chunk::update() {
 		}
 	}
 
-	// View from negative z
+	// negative z
 
 	for (int x = 0; x < CX; x++) {
 		for (int z = CZ - 1; z >= 0; z--) {
@@ -461,7 +436,7 @@ void Chunk::update() {
 		}
 	}
 
-	// View from positive z
+	// positive z
 
 	for (int x = 0; x < CX; x++) {
 		for (int z = 0; z < CZ; z++) {
@@ -504,28 +479,22 @@ void Chunk::update() {
 	changed = false;
 	elements = i;
 
-	// If this chunk is empty, no need to allocate a chunk slot.
 	if (!elements)
 		return;
 
-	// If we don't have an active slot, find one
 	if (chunk_slot[slot] != this) {
 		int lru = 0;
 		for (int i = 0; i < CHUNKSLOTS; i++) {
-			// If there is an empty slot, use it
 			if (!chunk_slot[i]) {
 				lru = i;
 				break;
 			}
-			// Otherwise try to find the least recently used slot
 			if (chunk_slot[i]->lastused < chunk_slot[lru]->lastused)
 				lru = i;
 		}
 
-		// If the slot is empty, create a new VBO
 		if (!chunk_slot[lru]) {
 			glGenBuffers(1, &vbo);
-			// Otherwise, steal it from the previous slot owner
 		}
 		else {
 			vbo = chunk_slot[lru]->vbo;
@@ -535,8 +504,6 @@ void Chunk::update() {
 		slot = lru;
 		chunk_slot[slot] = this;
 	}
-
-	// Upload vertices
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, i * sizeof *vertex, vertex, GL_STATIC_DRAW);
