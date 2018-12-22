@@ -2,9 +2,9 @@
 #include "global.h"
 
 struct byte4 {
-	uint8_t x, y, z, w, t;
+	uint8_t x, y, z, w, n,  t;
 	byte4() {}
-	byte4(uint8_t x, uint8_t y, uint8_t z, uint8_t w, uint8_t t = 0) : x(x), y(y), z(z), w(w), t(t) {}
+	byte4(uint8_t x, uint8_t y, uint8_t z, uint8_t w, uint8_t n,  uint8_t t = 0) : x(x), y(y), z(z), w(w), n(n), t(t) {}
 };
 
 class Chunk

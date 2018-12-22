@@ -46,29 +46,35 @@ void Camera::processKeyboard(unsigned int keys, float deltaTime, World *world)
 	glm::vec3 curRight = isWalking ? walkRight : right;
 	if (keys & 1)
 	{
-		//SoundEngine->play2D("audio/grass3.mp3", GL_TRUE);
+		if (isWalking && !isFalling && !isJumping && !SoundEngine->isCurrentlyPlaying("audio/grass3.mp3"))
+			SoundEngine->play2D("audio/grass3.mp3", GL_FALSE);
+		
 		direction -= curRight;
 	}
 	if (keys & 2)
 	{
-		//SoundEngine->play2D("audio/grass3.mp3", GL_FALSE);
+		if (isWalking && !isFalling && !isJumping && !SoundEngine->isCurrentlyPlaying("audio/grass3.mp3"))
+			SoundEngine->play2D("audio/grass3.mp3", GL_FALSE);
 		direction += curRight;
 	}
 	if (keys & 4)
 	{
-		//SoundEngine->play2D("audio/grass3.mp3", GL_FALSE);
+		if (isWalking && !isFalling && !isJumping && !SoundEngine->isCurrentlyPlaying("audio/grass3.mp3"))
+			SoundEngine->play2D("audio/grass3.mp3", GL_FALSE);
 		direction += curFront;
 	}
 	if (keys & 8)
 	{
-		//SoundEngine->play2D("audio/grass3.mp3", GL_FALSE);
+		if (isWalking && !isFalling && !isJumping && !SoundEngine->isCurrentlyPlaying("audio/grass3.mp3"))
+			SoundEngine->play2D("audio/grass3.mp3", GL_FALSE);
 		direction -= curFront;
 	}
 	if ((keys & 16))
 	{
 		if (isWalking && !isFalling && !isJumping)
 		{
-			//SoundEngine->play2D("audio/jump.mp3", GL_FALSE);
+			if (!SoundEngine->isCurrentlyPlaying("audio/grass3.mp3"))
+				SoundEngine->play2D("audio/grass3.mp3", GL_FALSE);
 			gravitySpeed = 0.12f;
 			isFalling = true;
 			isJumping = true;

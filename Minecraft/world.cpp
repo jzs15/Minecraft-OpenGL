@@ -88,7 +88,7 @@ bool World::canSetBlock(int x, int y, int z, uint8_t blk)
 }
 
 void World::render(const glm::mat4 &pv) {
-	float ud = FLT_MAX; // TODO
+	float ud = FLT_MAX;
 	int ux = -1;
 	int uy = -1;
 	int uz = -1;
@@ -98,8 +98,6 @@ void World::render(const glm::mat4 &pv) {
 			for (int z = 0; z < SCZ; z++) {
 				glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(c[x][y][z]->ax * CX, c[x][y][z]->ay * CY, c[x][y][z]->az * CZ));
 				glm::mat4 mvp = pv * model;
-
-				// Is this chunk on the screen?
 				glm::vec4 center = mvp * glm::vec4(CX / 2, CY / 2, CZ / 2, 1);
 
 				float d = glm::length(center);
@@ -107,15 +105,12 @@ void World::render(const glm::mat4 &pv) {
 				center.y /= center.w;
 				center.z /= center.w;
 
-				// If it is outside the screen, don't bother drawing it
 				if (!is_zoom && (fabsf(center.x) > 1 + fabsf(CX * 2 / center.w) || fabsf(center.y) > 1 + fabsf(CY * 2 / center.w) || fabsf(center.z) > 1 + fabsf(CZ * 2 / center.w)))
 				{
 					continue;
 				}
 
-				// If this chunk is not initialized, skip it
 				if (!c[x][y][z]->initialized) {
-					// But if it is the closest to the camera, mark it for initialization
 					if (ux < 0 || d < ud) {
 						ud = d;
 						ux = x;
@@ -125,8 +120,8 @@ void World::render(const glm::mat4 &pv) {
 					continue;
 				}
 
-				glUniformMatrix4fv(glGetUniformLocation(cur_program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-
+				glUniformMatrix4fv(glGetUniformLocation(cur_program, "pv"), 1, GL_FALSE, glm::value_ptr(pv));
+				glUniformMatrix4fv(glGetUniformLocation(cur_program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 				c[x][y][z]->render();
 			}
 		}
