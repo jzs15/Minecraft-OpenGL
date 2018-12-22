@@ -1,7 +1,8 @@
 #version 330 core
 layout (location = 0) in vec4 coord;
 layout (location = 1) in float type;
-uniform mat4 mvp;
+uniform mat4 pv;
+uniform mat4 model;
 out vec4 texcoord;
 out float textype;
 
@@ -35,5 +36,5 @@ void main(void) {
 		vect = coord.xyz;
 	}
 	// Apply the model-view-projection matrix to the xyz components of the vertex coordinates
-	gl_Position = mvp * vec4(vect, 1);
+	gl_Position = pv * model * vec4(vect, 1);
 }
