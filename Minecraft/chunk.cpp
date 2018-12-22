@@ -250,19 +250,19 @@ void Chunk::update() {
 
 				// Same block as previous one? Extend it.
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
-					vertex[i - 5] = byte4(x, y, z + 1, side, type);
-					vertex[i - 2] = byte4(x, y, z + 1, side, type);
-					vertex[i - 1] = byte4(x, y + 1, z + 1, side, type);
+					vertex[i - 5] = byte4(x, y, z + 1, side, 1, type);
+					vertex[i - 2] = byte4(x, y, z + 1, side, 1, type);
+					vertex[i - 1] = byte4(x, y + 1, z + 1, side, 1, type);
 					merged++;
 					// Otherwise, add a new quad.
 				}
 				else {
-					vertex[i++] = byte4(x, y, z, side, type);
-					vertex[i++] = byte4(x, y, z + 1, side, type);
-					vertex[i++] = byte4(x, y + 1, z, side, type);
-					vertex[i++] = byte4(x, y + 1, z, side, type);
-					vertex[i++] = byte4(x, y, z + 1, side, type);
-					vertex[i++] = byte4(x, y + 1, z + 1, side, type);
+					vertex[i++] = byte4(x, y, z, side, 1, type);
+					vertex[i++] = byte4(x, y, z + 1, side, 1, type);
+					vertex[i++] = byte4(x, y + 1, z, side, 1, type);
+					vertex[i++] = byte4(x, y + 1, z, side, 1, type);
+					vertex[i++] = byte4(x, y, z + 1, side, 1, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, side, 1, type);
 				}
 
 				vis = true;
@@ -292,18 +292,18 @@ void Chunk::update() {
 				}
 
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
-					vertex[i - 4] = byte4(x + 1, y, z + 1, side, type);
-					vertex[i - 2] = byte4(x + 1, y + 1, z + 1, side, type);
-					vertex[i - 1] = byte4(x + 1, y, z + 1, side, type);
+					vertex[i - 4] = byte4(x + 1, y, z + 1, side, 2, type);
+					vertex[i - 2] = byte4(x + 1, y + 1, z + 1, side, 2, type);
+					vertex[i - 1] = byte4(x + 1, y, z + 1, side, 2, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x + 1, y, z, side, type);
-					vertex[i++] = byte4(x + 1, y + 1, z, side, type);
-					vertex[i++] = byte4(x + 1, y, z + 1, side, type);
-					vertex[i++] = byte4(x + 1, y + 1, z, side, type);
-					vertex[i++] = byte4(x + 1, y + 1, z + 1, side, type);
-					vertex[i++] = byte4(x + 1, y, z + 1, side, type);
+					vertex[i++] = byte4(x + 1, y, z, side, 2, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, side, 2, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, side, 2, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, side, 2, type);
+					vertex[i++] = byte4(x + 1, y + 1, z + 1, side, 2, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, side, 2, type);
 				}
 				vis = true;
 			}
@@ -348,18 +348,18 @@ void Chunk::update() {
 				}
 
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
-					vertex[i - 4] = byte4(x, y, z + 1, bottom + 128, type);
-					vertex[i - 2] = byte4(x + 1, y, z + 1, bottom + 128, type);
-					vertex[i - 1] = byte4(x, y, z + 1, bottom + 128, type);
+					vertex[i - 4] = byte4(x, y, z + 1, bottom + 128, 3, type);
+					vertex[i - 2] = byte4(x + 1, y, z + 1, bottom + 128, 3, type);
+					vertex[i - 1] = byte4(x, y, z + 1, bottom + 128, 3, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x, y, z, bottom + 128, type);
-					vertex[i++] = byte4(x + 1, y, z, bottom + 128, type);
-					vertex[i++] = byte4(x, y, z + 1, bottom + 128, type);
-					vertex[i++] = byte4(x + 1, y, z, bottom + 128, type);
-					vertex[i++] = byte4(x + 1, y, z + 1, bottom + 128, type);
-					vertex[i++] = byte4(x, y, z + 1, bottom + 128, type);
+					vertex[i++] = byte4(x, y, z, bottom + 128, 3, type);
+					vertex[i++] = byte4(x + 1, y, z, bottom + 128, 3, type);
+					vertex[i++] = byte4(x, y, z + 1, bottom + 128, 3, type);
+					vertex[i++] = byte4(x + 1, y, z, bottom + 128, 3, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, bottom + 128, 3, type);
+					vertex[i++] = byte4(x, y, z + 1, bottom + 128, 3, type);
 				}
 				vis = true;
 			}
@@ -404,18 +404,18 @@ void Chunk::update() {
 				}
 
 				if (vis && z != 0 && blk[x][y][z] == blk[x][y][z - 1]) {
-					vertex[i - 5] = byte4(x, y + 1, z + 1, top + 128, type);
-					vertex[i - 2] = byte4(x, y + 1, z + 1, top + 128, type);
-					vertex[i - 1] = byte4(x + 1, y + 1, z + 1, top + 128, type);
+					vertex[i - 5] = byte4(x, y + 1, z + 1, top + 128, 4, type);
+					vertex[i - 2] = byte4(x, y + 1, z + 1, top + 128, 4, type);
+					vertex[i - 1] = byte4(x + 1, y + 1, z + 1, top + 128, 4, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x, y + 1, z, top + 128, type);
-					vertex[i++] = byte4(x, y + 1, z + 1, top + 128, type);
-					vertex[i++] = byte4(x + 1, y + 1, z, top + 128, type);
-					vertex[i++] = byte4(x + 1, y + 1, z, top + 128, type);
-					vertex[i++] = byte4(x, y + 1, z + 1, top + 128, type);
-					vertex[i++] = byte4(x + 1, y + 1, z + 1, top + 128, type);
+					vertex[i++] = byte4(x, y + 1, z, top + 128, 4, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, top + 128, 4, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, top + 128, 4, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, top + 128, 4, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, top + 128, 4, type);
+					vertex[i++] = byte4(x + 1, y + 1, z + 1, top + 128, 4, type);
 				}
 				vis = true;
 			}
@@ -443,18 +443,18 @@ void Chunk::update() {
 				}
 
 				if (vis && y != 0 && blk[x][y][z] == blk[x][y - 1][z]) {
-					vertex[i - 5] = byte4(x, y + 1, z, side, type);
-					vertex[i - 3] = byte4(x, y + 1, z, side, type);
-					vertex[i - 2] = byte4(x + 1, y + 1, z, side, type);
+					vertex[i - 5] = byte4(x, y + 1, z, side, 5, type);
+					vertex[i - 3] = byte4(x, y + 1, z, side, 5, type);
+					vertex[i - 2] = byte4(x + 1, y + 1, z, side, 5, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x, y, z, side, type);
-					vertex[i++] = byte4(x, y + 1, z, side, type);
-					vertex[i++] = byte4(x + 1, y, z, side, type);
-					vertex[i++] = byte4(x, y + 1, z, side, type);
-					vertex[i++] = byte4(x + 1, y + 1, z, side, type);
-					vertex[i++] = byte4(x + 1, y, z, side, type);
+					vertex[i++] = byte4(x, y, z, side, 5, type);
+					vertex[i++] = byte4(x, y + 1, z, side, 5, type);
+					vertex[i++] = byte4(x + 1, y, z, side, 5, type);
+					vertex[i++] = byte4(x, y + 1, z, side, 5, type);
+					vertex[i++] = byte4(x + 1, y + 1, z, side, 5, type);
+					vertex[i++] = byte4(x + 1, y, z, side, 5, type);
 				}
 				vis = true;
 			}
@@ -483,18 +483,18 @@ void Chunk::update() {
 				}
 
 				if (vis && y != 0 && blk[x][y][z] == blk[x][y - 1][z]) {
-					vertex[i - 4] = byte4(x, y + 1, z + 1, side, type);
-					vertex[i - 3] = byte4(x, y + 1, z + 1, side, type);
-					vertex[i - 1] = byte4(x + 1, y + 1, z + 1, side, type);
+					vertex[i - 4] = byte4(x, y + 1, z + 1, side, 6, type);
+					vertex[i - 3] = byte4(x, y + 1, z + 1, side, 6, type);
+					vertex[i - 1] = byte4(x + 1, y + 1, z + 1, side, 6, type);
 					merged++;
 				}
 				else {
-					vertex[i++] = byte4(x, y, z + 1, side, type);
-					vertex[i++] = byte4(x + 1, y, z + 1, side, type);
-					vertex[i++] = byte4(x, y + 1, z + 1, side, type);
-					vertex[i++] = byte4(x, y + 1, z + 1, side, type);
-					vertex[i++] = byte4(x + 1, y, z + 1, side, type);
-					vertex[i++] = byte4(x + 1, y + 1, z + 1, side, type);
+					vertex[i++] = byte4(x, y, z + 1, side, 6, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, side, 6, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, side, 6, type);
+					vertex[i++] = byte4(x, y + 1, z + 1, side, 6, type);
+					vertex[i++] = byte4(x + 1, y, z + 1, side, 6, type);
+					vertex[i++] = byte4(x + 1, y + 1, z + 1, side, 6, type);
 				}
 				vis = true;
 			}
@@ -553,9 +553,11 @@ void Chunk::render() {
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glEnableVertexAttribArray(glGetAttribLocation(cur_program, "coord"));
-	glVertexAttribPointer(glGetAttribLocation(cur_program, "coord"), 4, GL_BYTE, GL_FALSE, 5 * sizeof(uint8_t), (void*)0);
+	glVertexAttribPointer(glGetAttribLocation(cur_program, "coord"), 4, GL_BYTE, GL_FALSE, 6 * sizeof(uint8_t), (void*)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 1, GL_BYTE, GL_FALSE, 5 * sizeof(uint8_t), (void*)(4 * sizeof(uint8_t)));
+	glVertexAttribPointer(1, 1, GL_BYTE, GL_FALSE, 6 * sizeof(uint8_t), (void*)(4 * sizeof(uint8_t)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 1, GL_BYTE, GL_FALSE, 6 * sizeof(uint8_t), (void*)(5 * sizeof(uint8_t)));
 	glEnableVertexAttribArray(glGetAttribLocation(cur_program, "coord"));
 	glDrawArrays(GL_TRIANGLES, 0, elements);
 }

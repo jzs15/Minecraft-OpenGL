@@ -7,11 +7,15 @@
 #include "texture.h"
 #include "shader_utils.h"
 #include "camera.h"
+#include <vector>
+#include <string>
 
 static World *world;
 static Camera *camera;
 bool is_zoom = false;
 GLuint cur_program;
+static std::vector<glm::vec3> pointLights;
+ISoundEngine *SoundEngine = createIrrKlangDevice();
 
 static void init_skybox()
 {
@@ -215,15 +219,30 @@ static void drawHud() {
 	glUseProgram(program);
 }
 
+static void calculateFrameRate()
+{
+	static float FramePerSecond = 0.0f;
+	static float lastTime = 0.0f;
+	float curTime = GetTickCount() * 0.001f;
+	++FramePerSecond;
+	if (curTime - lastTime > 1.0f)
+	{
+		lastTime = curTime;
+		fps = FramePerSecond;
+		FramePerSecond = 0;
+	}
+}
+
 static void drawText()
 {
 	char txt[1024];
+	calculateFrameRate();
 	glm::vec3 pos = camera->getPosition();
 	int time = 720 * cur_time + 720;
 	int hour = time / 60;
 	int min = time % 60;
 
-	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d", pos.x, pos.y, pos.z, hour, min);
+	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d %dfps", pos.x, pos.y, pos.z, hour, min, fps);
 
 	glBindTexture(GL_TEXTURE_2D, text_texture_id);
 	glDisable(GL_DEPTH_TEST);
@@ -249,11 +268,49 @@ static void drawText()
 		glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
 		glVertexAttribPointer(glGetAttribLocation(text, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 		glDrawArrays(GL_QUADS, 0, 4);
-		widthGap -= 0.025f;
+		widthGap -= 17.0f / ww;
 	}
 	glEnable(GL_DEPTH_TEST);
 	glUseProgram(program);
 	glBindTexture(GL_TEXTURE_2D, block_texture_id);
+}
+
+static void drawInputText()
+{
+	glBindTexture(GL_TEXTURE_2D, text_texture_id);
+	glDisable(GL_DEPTH_TEST);
+	glUseProgram(text);
+
+	float textWidth = 25.0f / ww;
+	float textHeight = 25.0f / wh;
+	float widthGap = 1 - 5.0f / ww;
+	float heightGap = 1.0 - 35.0f / wh;
+	float textureGap = 1 / 16.0f;
+
+	int len = strlen(input_text);
+	for (int i = 0; i < len; i++)
+	{
+		float u = (input_text[i] % 16) / 16.0f;
+		float v = int(input_text[i] / 16) / 16.0f;
+		float blocksVertex[4][4] = {
+			{-widthGap, heightGap, u, v},												//left top
+			{-widthGap, heightGap - textHeight, u, v + textureGap},					//left bottom
+			{textWidth - widthGap, heightGap - textHeight, u + textureGap, v + textureGap},			//right bottom
+			{textWidth - widthGap, heightGap, u + textureGap, v},		//right top
+		};
+		glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(glGetAttribLocation(text, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
+		glDrawArrays(GL_QUADS, 0, 4);
+		widthGap -= 20.0f / ww;
+	}
+	glEnable(GL_DEPTH_TEST);
+	glUseProgram(program);
+	glBindTexture(GL_TEXTURE_2D, block_texture_id);
+}
+
+static void drawBlockText()
+{
+	printf("%d %d %d %d\n", mx, my, mz, face);
 }
 
 static void display() {
@@ -274,8 +331,8 @@ static void display() {
 	glm::mat4 sky_mvp = projection * glm::mat4(glm::mat3(view));
 	glm::mat4 mvp = projection * view;
 
-	glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-
+	glUniformMatrix4fv(glGetUniformLocation(program, "pv"), 1, GL_FALSE, glm::value_ptr(mvp));
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_POLYGON_OFFSET_FILL);
@@ -294,7 +351,11 @@ static void display() {
 	glUseProgram(program);
 	glDepthFunc(GL_LESS);
 
-
+	unsigned int lightNum = pointLights.size();
+	for(int i = 0; i < lightNum; i++)
+		glUniform3fv(glGetUniformLocation(program, ("pointLights[" + std::to_string(i) + "]").c_str()), 1, glm::value_ptr(pointLights[i]));
+	glUniform1f(glGetUniformLocation(program, "lightNum"), lightNum);
+	glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, glm::value_ptr(camera->getPosition()));
 	glUniform1f(glGetUniformLocation(program, "timeValue"), cur_time);
 	/* Then draw chunks */
 	cur_program = program;
@@ -353,49 +414,56 @@ static void display() {
 	float bz = mz;
 
 	/* Render a box around the block we are pointing at */
-	float box[24][5] = {
-		{bx + 0, by + 0, bz + 0, 63, 0},
-		{bx + 1, by + 0, bz + 0, 63, 0},
-		{bx + 0, by + 1, bz + 0, 63, 0},
-		{bx + 1, by + 1, bz + 0, 63, 0},
-		{bx + 0, by + 0, bz + 1, 63, 0},
-		{bx + 1, by + 0, bz + 1, 63, 0},
-		{bx + 0, by + 1, bz + 1, 63, 0},
-		{bx + 1, by + 1, bz + 1, 63, 0},
+	float box[24][6] = {
+		{bx + 0, by + 0, bz + 0, 63, 0, 0},
+		{bx + 1, by + 0, bz + 0, 63, 0, 0},
+		{bx + 0, by + 1, bz + 0, 63, 0, 0},
+		{bx + 1, by + 1, bz + 0, 63, 0, 0},
+		{bx + 0, by + 0, bz + 1, 63, 0, 0},
+		{bx + 1, by + 0, bz + 1, 63, 0, 0},
+		{bx + 0, by + 1, bz + 1, 63, 0, 0},
+		{bx + 1, by + 1, bz + 1, 63, 0, 0},
 
-		{bx + 0, by + 0, bz + 0, 63, 0},
-		{bx + 0, by + 1, bz + 0, 63, 0},
-		{bx + 1, by + 0, bz + 0, 63, 0},
-		{bx + 1, by + 1, bz + 0, 63, 0},
-		{bx + 0, by + 0, bz + 1, 63, 0},
-		{bx + 0, by + 1, bz + 1, 63, 0},
-		{bx + 1, by + 0, bz + 1, 63, 0},
-		{bx + 1, by + 1, bz + 1, 63, 0},
+		{bx + 0, by + 0, bz + 0, 63, 0, 0},
+		{bx + 0, by + 1, bz + 0, 63, 0, 0},
+		{bx + 1, by + 0, bz + 0, 63, 0, 0},
+		{bx + 1, by + 1, bz + 0, 63, 0, 0},
+		{bx + 0, by + 0, bz + 1, 63, 0, 0},
+		{bx + 0, by + 1, bz + 1, 63, 0, 0},
+		{bx + 1, by + 0, bz + 1, 63, 0, 0},
+		{bx + 1, by + 1, bz + 1, 63, 0, 0},
 
-		{bx + 0, by + 0, bz + 0, 63, 0},
-		{bx + 0, by + 0, bz + 1, 63, 0},
-		{bx + 1, by + 0, bz + 0, 63, 0},
-		{bx + 1, by + 0, bz + 1, 63, 0},
-		{bx + 0, by + 1, bz + 0, 63, 0},
-		{bx + 0, by + 1, bz + 1, 63, 0},
-		{bx + 1, by + 1, bz + 0, 63, 0},
-		{bx + 1, by + 1, bz + 1, 63, 0},
+		{bx + 0, by + 0, bz + 0, 63, 0, 0},
+		{bx + 0, by + 0, bz + 1, 63, 0, 0},
+		{bx + 1, by + 0, bz + 0, 63, 0, 0},
+		{bx + 1, by + 0, bz + 1, 63, 0, 0},
+		{bx + 0, by + 1, bz + 0, 63, 0, 0},
+		{bx + 0, by + 1, bz + 1, 63, 0, 0},
+		{bx + 1, by + 1, bz + 0, 63, 0, 0},
+		{bx + 1, by + 1, bz + 1, 63, 0, 0},
 	};
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
 	glDisable(GL_CULL_FACE);
 	glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
 	glBindBuffer(GL_ARRAY_BUFFER, cursor_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof box, box, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(glGetAttribLocation(program, "coord"), 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(glGetAttribLocation(program, "coord"), 4, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 1, GL_BYTE, GL_FALSE, 5 * sizeof(float), (void*)(4 * sizeof(float)));
+	glVertexAttribPointer(1, 1, GL_BYTE, GL_FALSE, 6 * sizeof(float), (void*)(4 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 1, GL_BYTE, GL_FALSE, 6 * sizeof(float), (void*)(5 * sizeof(float)));
 	glEnableVertexAttribArray(glGetAttribLocation(program, "coord"));
 	glDrawArrays(GL_LINES, 0, 24);
 
 
 	drawHud();
 	drawText();
+	if (is_input)
+	{
+		drawInputText();
+	}
 	/* And we are done */
 
 	glutSwapBuffers();
@@ -531,15 +599,48 @@ static void mouse(int button, int state, int x, int y) {
 		if (canSetBlock(mx, my, mz))
 		{
 			world->set(mx, my, mz, buildtype);
+			if (world->get(mx, my, mz) == 43)
+				pointLights.push_back(glm::vec3(mx + 0.5, my + 0.5, mz + 0.5));
 		}
 	}
 	else {
+		if (world->get(mx, my, mz) == 43)
+		{
+			unsigned int len = pointLights.size();
+			for (int i = 0; i < len; i++)
+			{
+				if (pointLights[i].x == mx + 0.5)
+				{
+					pointLights.erase(pointLights.begin() + i);
+					break;
+				}
+			}
+		}
 		world->set(mx, my, mz, 0);
 	}
 }
 
 void processNormalKeys(unsigned char key, int x, int y)
 {
+	if (is_input)
+	{
+		if (key == KEY_ESCAPE)
+		{
+			memset(input_text, 0, sizeof(input_text));
+			is_input = !is_input;
+			return;
+		}
+		else if (key == KEY_ENTER)
+		{
+			is_input = !is_input;
+			//load rendering function
+			drawBlockText();
+			memset(input_text, 0, sizeof(input_text));
+			return;
+		}
+		snprintf(input_text, 1024, "%s%c", input_text, key);
+		return;
+	}
 	switch (key) {
 	case KEY_LEFT:
 		keys |= 1;
@@ -567,6 +668,12 @@ void processNormalKeys(unsigned char key, int x, int y)
 		if (!is_ortho)
 		{
 			is_ortho = !is_ortho;
+		}
+		break;
+	case KEY_INPUT:
+		if (!is_input)
+		{
+			is_input = !is_input;
 		}
 		break;
 	case KEY_ENTER:
@@ -646,7 +753,7 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, "No support for OpenGL 2.0 found\n");
 		return 1;
 	}
-
+	SoundEngine->play2D("audio/Where Are We Now.mp3", GL_TRUE);
 	printf("Use the mouse to look around.\n");
 	printf("Use cursor keys, pageup and pagedown to move around.\n");
 	printf("Use home and end to go to two predetermined positions.\n");
