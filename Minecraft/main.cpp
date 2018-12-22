@@ -130,7 +130,7 @@ static int init_resources() {
 	if (program == 0 || hud == 0 || skybox == 0 || text == 0)
 		return 0;
 
-	cur_time = -0.3;
+	cur_time = -1.0;
 	init_skybox();
 	init_text();
 	/* Create and upload the texture */
@@ -219,30 +219,15 @@ static void drawHud() {
 	glUseProgram(program);
 }
 
-static void calculateFrameRate()
-{
-	static float FramePerSecond = 0.0f;
-	static float lastTime = 0.0f;
-	float curTime = GetTickCount() * 0.001f;
-	++FramePerSecond;
-	if (curTime - lastTime > 1.0f)
-	{
-		lastTime = curTime;
-		fps = FramePerSecond;
-		FramePerSecond = 0;
-	}
-}
-
 static void drawText()
 {
 	char txt[1024];
-	calculateFrameRate();
 	glm::vec3 pos = camera->getPosition();
 	int time = 720 * cur_time + 720;
 	int hour = time / 60;
 	int min = time % 60;
 
-	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d %dfps", pos.x, pos.y, pos.z, hour, min, fps);
+	snprintf(txt, 1024, "(%.2f, %.2f, %.2f) %.2d:%.2d %dfps", pos.x, pos.y - 1.4, pos.z, hour, min, fps);
 
 	glBindTexture(GL_TEXTURE_2D, text_texture_id);
 	glDisable(GL_DEPTH_TEST);
@@ -507,14 +492,23 @@ static void specialup(int key, int x, int y) {
 }
 
 static void idle() {
-	static int pt = 0;
+	static int preTime = 0;
+	static int preFrameTime = 0;
+	static int frame = 0;
 	now = time(0);
-	int t = glutGet(GLUT_ELAPSED_TIME);
-	float gap = t - pt;
+	int curTime = glutGet(GLUT_ELAPSED_TIME);
+	float gap = curTime - preTime;
 	float dt = gap * 1.0e-3;
-	pt = t;
+	preTime = curTime;
 	cur_time += 2.0 * gap / ONE_DAY;
 	cur_time = cur_time >= 1.0 ? glm::fract(cur_time) - 1 : cur_time;
+	frame++;
+	if (curTime - preFrameTime >= 1000)
+	{
+		preFrameTime = curTime;
+		fps = frame;
+		frame = 0;
+	}
 
 	if (keys != 0)
 	{
@@ -618,6 +612,7 @@ static void mouse(int button, int state, int x, int y) {
 		}
 		world->set(mx, my, mz, 0);
 	}
+	SoundEngine->play2D("audio/gravel1.mp3", GL_FALSE);
 }
 
 void processNormalKeys(unsigned char key, int x, int y)
