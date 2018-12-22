@@ -1,10 +1,15 @@
 #pragma once
+#pragma comment(lib, "irrklang.lib")
+
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/noise.hpp>
+#include <irrKlang/irrKlang.h>
+
+using namespace irrklang;
 
 #define CX 16
 #define CY 32
@@ -28,6 +33,9 @@
 #define KEY_SHIFT 112
 #define KEY_F 102
 #define KEY_Z 122
+#define KEY_INPUT 96
+
+extern ISoundEngine *SoundEngine;
 
 extern GLuint cur_program;
 static GLuint program;
@@ -47,15 +55,17 @@ static int mx, my, mz;
 static int face;
 static uint8_t buildtype = 1;
 
-
 static float cur_time;
+static int fps = 0;
 static time_t now;
 static unsigned int keys;
 static bool select_using_depthbuffer = false;
 static bool enter_press = false;
 static bool is_ortho = false;
+static bool is_input = false;
 extern bool is_zoom;
 
+static char input_text[1024];
 static const char *blocknames[44] = {
 	"Air", "Stone", "Grass Block", "Dirt", "Cobblestone", "Planks", "Sand", "Glass", 
 	"Bricks", "Water", "Coal Ore", "Iron Ore", "Gold Ore", "Diamond Ore", "Emetald Ore", "Redstone Ore",
