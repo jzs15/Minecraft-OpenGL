@@ -1,4 +1,6 @@
 #pragma once
+#pragma comment(lib, "irrklang.lib")
+
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <glm/glm.hpp>
@@ -32,6 +34,8 @@ using namespace irrklang;
 #define KEY_F 102
 #define KEY_Z 122
 #define KEY_INPUT 96
+
+extern ISoundEngine *SoundEngine;
 
 extern GLuint cur_program;
 static GLuint program;

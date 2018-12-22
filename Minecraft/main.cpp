@@ -12,9 +12,7 @@ static World *world;
 static Camera *camera;
 bool is_zoom = false;
 GLuint cur_program;
-
-//ISoundEngine *SoundEngine = createIrrKlangDevice();
-//SoundEngine->play2D("audio/breakout.mp3", GL_TRUE);
+ISoundEngine *SoundEngine = createIrrKlangDevice();
 
 static void init_skybox()
 {
@@ -305,6 +303,11 @@ static void drawInputText()
 	glEnable(GL_DEPTH_TEST);
 	glUseProgram(program);
 	glBindTexture(GL_TEXTURE_2D, block_texture_id);
+}
+
+static void drawBlockText()
+{
+	printf("%d %d %d %d\n", mx, my, mz, face);
 }
 
 static void display() {
@@ -607,6 +610,7 @@ void processNormalKeys(unsigned char key, int x, int y)
 		{
 			is_input = !is_input;
 			//load rendering function
+			drawBlockText();
 			memset(input_text, 0, sizeof(input_text));
 			return;
 		}
@@ -725,7 +729,7 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, "No support for OpenGL 2.0 found\n");
 		return 1;
 	}
-
+	SoundEngine->play2D("audio/Where Are We Now.mp3", GL_TRUE);
 	printf("Use the mouse to look around.\n");
 	printf("Use cursor keys, pageup and pagedown to move around.\n");
 	printf("Use home and end to go to two predetermined positions.\n");
