@@ -122,9 +122,8 @@ static int init_resources() {
 	program = create_program("shaders/minecraft.v.glsl", "shaders/minecraft.f.glsl");
 	hud = create_program("shaders/hud.v.glsl", "shaders/hud.f.glsl");
 	skybox = create_program("shaders/skybox.v.glsl", "shaders/skybox.f.glsl");
-	text = create_program("shaders/hud.v.glsl", "shaders/hud.f.glsl");
 
-	if (program == 0 || hud == 0 || skybox == 0 || text == 0)
+	if (program == 0 || hud == 0 || skybox == 0)
 		return 0;
 
 	cur_time = -0.3;
@@ -243,7 +242,7 @@ static void drawText()
 
 	glBindTexture(GL_TEXTURE_2D, text_texture_id);
 	glDisable(GL_DEPTH_TEST);
-	glUseProgram(text);
+	glUseProgram(hud);
 
 	float textWidth = 20.0f / ww;
 	float textHeight = 20.0f / wh;
@@ -263,7 +262,7 @@ static void drawText()
 			{textWidth - widthGap, heightGap, u + textureGap, v},		//right top
 		};
 		glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
-		glVertexAttribPointer(glGetAttribLocation(text, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(glGetAttribLocation(hud, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 		glDrawArrays(GL_QUADS, 0, 4);
 		widthGap -= 17.0f / ww;
 	}
@@ -276,7 +275,7 @@ static void drawInputText()
 {
 	glBindTexture(GL_TEXTURE_2D, text_texture_id);
 	glDisable(GL_DEPTH_TEST);
-	glUseProgram(text);
+	glUseProgram(hud);
 
 	float textWidth = 25.0f / ww;
 	float textHeight = 25.0f / wh;
@@ -296,7 +295,7 @@ static void drawInputText()
 			{textWidth - widthGap, heightGap, u + textureGap, v},		//right top
 		};
 		glBufferData(GL_ARRAY_BUFFER, sizeof blocksVertex, blocksVertex, GL_DYNAMIC_DRAW);
-		glVertexAttribPointer(glGetAttribLocation(text, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(glGetAttribLocation(hud, "coord"), 4, GL_FLOAT, GL_FALSE, 0, 0);
 		glDrawArrays(GL_QUADS, 0, 4);
 		widthGap -= 20.0f / ww;
 	}
@@ -307,7 +306,7 @@ static void drawInputText()
 
 static void drawBlockText()
 {
-	printf("%d %d %d %d\n", mx, my, mz, face);
+	printf("%s %d %d %d %d\n",input_text, mx, my, mz, face);
 }
 
 static void display() {

@@ -41,7 +41,6 @@ extern GLuint cur_program;
 static GLuint program;
 static GLuint hud;
 static GLuint skybox;
-static GLuint text;
 static GLuint block_texture_id;
 static GLuint sky_texture_id;
 static GLuint text_texture_id;
