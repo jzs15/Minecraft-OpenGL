@@ -130,7 +130,7 @@ static int init_resources() {
 	if (program == 0 || hud == 0 || skybox == 0 || text == 0)
 		return 0;
 
-	cur_time = -1.0;
+	cur_time = -0.3;
 	init_skybox();
 	init_text();
 	/* Create and upload the texture */
@@ -571,11 +571,8 @@ static void mouse(int button, int state, int x, int y) {
 				buildtype++;
 			}
 		}
-		fprintf(stderr, "Building blocks of type %u (%s)\n", buildtype, blocknames[buildtype]);
 		return;
 	}
-
-	fprintf(stderr, "Clicked on %d, %d, %d, face %d, button %d\n", mx, my, mz, face, button);
 
 	if (button == 0) {
 		if (face == 0)
@@ -744,12 +741,7 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	if (!GLEW_VERSION_2_0) {
-		fprintf(stderr, "No support for OpenGL 2.0 found\n");
-		return 1;
-	}
 	SoundEngine->play2D("audio/Where Are We Now.mp3", GL_TRUE);
-	printf("Use the mouse to look around.\n");
 	if (init_resources()) {
 		glutSetCursor(GLUT_CURSOR_NONE);
 		glutWarpPointer(320, 240);
