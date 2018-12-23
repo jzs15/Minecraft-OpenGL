@@ -19,7 +19,7 @@ using namespace irrklang;
 #define SCZ 32
 #define CHUNKSLOTS (SCX * SCY * SCZ)
 #define SEALEVEL 4
-#define ONE_DAY 60000
+#define ONE_DAY 600000
 #define M_PI 3.14159265359
 
 #define KEY_UP 119
@@ -34,6 +34,7 @@ using namespace irrklang;
 #define KEY_F 102
 #define KEY_Z 122
 #define KEY_INPUT 96
+#define KEY_BACKSPACE 8
 
 extern ISoundEngine *SoundEngine;
 

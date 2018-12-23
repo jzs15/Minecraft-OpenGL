@@ -73,8 +73,8 @@ void Camera::processKeyboard(unsigned int keys, float deltaTime, World *world)
 	{
 		if (isWalking && !isFalling && !isJumping)
 		{
-			if (!SoundEngine->isCurrentlyPlaying("audio/grass3.mp3"))
-				SoundEngine->play2D("audio/grass3.mp3", GL_FALSE);
+			if (!SoundEngine->isCurrentlyPlaying("audio/jump.mp3"))
+				SoundEngine->play2D("audio/jump.mp3", GL_FALSE);
 			gravitySpeed = 0.12f;
 			isFalling = true;
 			isJumping = true;

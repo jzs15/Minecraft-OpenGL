@@ -300,19 +300,23 @@ static void drawBlockText()
 static void display() {
 	glm::mat4 view = camera->getViewMatrix();
 	glm::mat4 projection;
+	glm::mat4 sky_mvp;
 	if (is_ortho && !is_zoom)
 	{
 		projection = glm::ortho(0.0f, 200.0f, -100.0f, 200.0f, -1000.0f, 1000.0f);
+		sky_mvp = glm::perspective(glm::radians(45.0f), 1.0f*ww / wh, 0.01f, 1000.0f) * glm::mat4(glm::mat3(view));
 	}
 	else if (!is_ortho && is_zoom)
 	{
 		projection = glm::perspective(glm::radians(10.0f), 1.0f*ww / wh, 0.01f, 1000.0f);
+		sky_mvp = glm::perspective(glm::radians(45.0f), 1.0f*ww / wh, 0.01f, 1000.0f) * glm::mat4(glm::mat3(view));
 	}
 	else
 	{
 		projection = glm::perspective(glm::radians(45.0f), 1.0f*ww / wh, 0.01f, 1000.0f);
+		sky_mvp = projection * glm::mat4(glm::mat3(view));
 	}
-	glm::mat4 sky_mvp = projection * glm::mat4(glm::mat3(view));
+	
 	glm::mat4 mvp = projection * view;
 
 	glUniformMatrix4fv(glGetUniformLocation(program, "pv"), 1, GL_FALSE, glm::value_ptr(mvp));
@@ -619,6 +623,15 @@ void processNormalKeys(unsigned char key, int x, int y)
 		{
 			memset(input_text, 0, sizeof(input_text));
 			is_input = !is_input;
+			return;
+		}
+		else if (key == KEY_BACKSPACE)
+		{
+			int len = strlen(input_text);
+			if (len > 0)
+			{
+				input_text[len - 1] = '\0';
+			}
 			return;
 		}
 		else if (key == KEY_ENTER)
